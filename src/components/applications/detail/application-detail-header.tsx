@@ -1,0 +1,133 @@
+import Link from "next/link";
+import {
+  BriefcaseBusiness,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  Ellipsis,
+  MapPin,
+  Pencil,
+  Sparkles,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+export type ApplicationHeaderData = {
+  initials: string;
+  role: string;
+  company: string;
+  status: string;
+  match: number;
+  location: string;
+  workMode: string;
+  appliedAgo: string;
+};
+
+type ApplicationDetailHeaderProps = {
+  application: ApplicationHeaderData;
+  applicationsPath: string;
+  demoMode?: boolean;
+};
+
+export function ApplicationDetailHeader({
+  application,
+  applicationsPath,
+  demoMode = false,
+}: ApplicationDetailHeaderProps) {
+  return (
+    <div className="space-y-3">
+      <nav aria-label="Breadcrumb">
+        <ol className="flex min-w-0 items-center gap-1.5 text-xs text-slate-500">
+          <li>
+            <Link href={applicationsPath} className="hover:text-indigo-700">
+              Applications
+            </Link>
+          </li>
+          <li aria-hidden="true">
+            <ChevronRight className="size-3.5" />
+          </li>
+          <li className="truncate font-medium text-slate-700" aria-current="page">
+            {application.role}
+          </li>
+        </ol>
+      </nav>
+
+      <header className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-sm font-medium text-white">
+              {application.initials}
+            </span>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-medium tracking-tight text-slate-950 sm:text-2xl">
+                  {application.role}
+                </h1>
+                <Badge className="rounded-md bg-violet-50 px-2 font-medium text-violet-700">
+                  {application.status}
+                </Badge>
+                <Badge className="rounded-md bg-indigo-50 px-2 font-medium text-indigo-700">
+                  <Sparkles className="size-3" aria-hidden="true" />
+                  {application.match}% AI match
+                </Badge>
+              </div>
+              <p className="mt-1 text-sm font-medium text-slate-600">
+                {application.company}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="size-3.5 text-slate-400" aria-hidden="true" />
+                  {application.location}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <BriefcaseBusiness className="size-3.5 text-slate-400" aria-hidden="true" />
+                  {application.workMode}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock3 className="size-3.5 text-slate-400" aria-hidden="true" />
+                  Applied {application.appliedAgo}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-lg"
+              disabled={demoMode}
+              title={demoMode ? "Editing is unavailable in demo mode" : undefined}
+            >
+              <Pencil data-icon="inline-start" aria-hidden="true" />
+              Edit
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="rounded-lg"
+              disabled={demoMode}
+              title={demoMode ? "Status changes are unavailable in demo mode" : undefined}
+            >
+              Change Status
+              <ChevronDown data-icon="inline-end" aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-lg"
+              disabled={demoMode}
+              title={demoMode ? "Actions are unavailable in demo mode" : undefined}
+            >
+              <Ellipsis data-icon="inline-start" aria-hidden="true" />
+              More Actions
+            </Button>
+          </div>
+        </div>
+      </header>
+    </div>
+  );
+}

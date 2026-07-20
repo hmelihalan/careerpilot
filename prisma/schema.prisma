@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  WISHLIST
+  APPLIED
+  ASSESSMENT
+  INTERVIEW
+  OFFER
+  REJECTED
+}
+
+enum WorkMode {
+  REMOTE
+  HYBRID
+  ON_SITE
+}
+
+enum EmploymentType {
+  INTERNSHIP
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  TEMPORARY
+  OTHER
+}
+
+enum ApplicationSource {
+  LINKEDIN
+  COMPANY_WEBSITE
+  GREENHOUSE
+  LEVER
+  ASHBY
+  REFERRAL
+  OTHER
+}
+
+model Application {
+  id             String                     @id @default(cuid())
+  userId         String
+  slug           String
+  company        String
+  role           String
+  description    String?                    @db.Text
+  status         ApplicationStatus          @default(WISHLIST)
+  location       String?
+  workMode       WorkMode?
+  employmentType EmploymentType?
+  source         ApplicationSource?
+  applicationUrl String?
+  salaryMin      Int?
+  salaryMax      Int?
+  currency       String?
+  deadline       DateTime?
+  appliedAt      DateTime?
+  matchScore     Int?
+  requiredSkills String[]                   @default([])
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  statusHistory  ApplicationStatusHistory[]
+  notes          ApplicationNote[]
+
+  @@unique([userId, slug])
+  @@index([userId])
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+model ApplicationStatusHistory {
+  id            String             @id @default(cuid())
+  applicationId String
+  fromStatus    ApplicationStatus?
+  toStatus      ApplicationStatus
+  changedAt     DateTime           @default(now())
+  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@index([applicationId, changedAt])
+}
+
+model ApplicationNote {
+  id            String      @id @default(cuid())
+  applicationId String
+  content       String      @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, createdAt])
+}
