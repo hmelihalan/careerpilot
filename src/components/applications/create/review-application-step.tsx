@@ -17,6 +17,7 @@ import type {
 type ReviewApplicationStepProps = {
   application: ApplicationFormData;
   errors: ApplicationFieldErrors;
+  formError?: string;
   wasAnalyzed: boolean;
   onChange: <Field extends keyof ApplicationFormData>(
     field: Field,
@@ -30,6 +31,7 @@ type ReviewApplicationStepProps = {
 export function ReviewApplicationStep({
   application,
   errors,
+  formError,
   wasAnalyzed,
   onChange,
   onBack,
@@ -60,6 +62,15 @@ export function ReviewApplicationStep({
               Manual entry mode — complete the required fields to continue.
             </p>
           )}
+
+          {formError ? (
+            <div
+              className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700"
+              role="alert"
+            >
+              {formError}
+            </div>
+          ) : null}
 
           <ApplicationFormFields
             application={application}

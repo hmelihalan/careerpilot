@@ -2,10 +2,10 @@ import Link from "next/link";
 import { CalendarClock, MapPin, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import type { MockApplication } from "@/src/types/application";
+import type { ApplicationListItem } from "@/src/types/application";
 
 type ApplicationCardProps = {
-  application: MockApplication;
+  application: ApplicationListItem;
   applicationsPath: string;
 };
 
@@ -24,7 +24,7 @@ export function ApplicationCard({
         </p>
         <Badge className="h-5 shrink-0 rounded-md bg-indigo-50 px-1 text-[10px] font-medium text-indigo-700">
           <Sparkles className="size-2.5" aria-hidden="true" />
-          {application.matchScore}%
+          {application.matchScore === null ? "Not scored" : `${application.matchScore}%`}
         </Badge>
       </div>
 
@@ -35,7 +35,10 @@ export function ApplicationCard({
       <div className="mt-auto min-w-0 space-y-1.5 pt-2.5 text-[11px] text-slate-500">
         <p className="flex min-w-0 items-center gap-1.5">
           <MapPin className="size-3 shrink-0 text-slate-400" aria-hidden="true" />
-          <span className="truncate">{application.location}</span>
+          <span className="truncate">
+            {application.location}
+            {application.workMode ? ` · ${application.workMode}` : ""}
+          </span>
         </p>
         <p className="flex min-w-0 items-center gap-1.5">
           <CalendarClock className="size-3 shrink-0 text-slate-400" aria-hidden="true" />

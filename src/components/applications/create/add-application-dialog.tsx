@@ -5,9 +5,11 @@ import {
   useContext,
   useRef,
   useState,
+  useTransition,
   type PropsWithChildren,
 } from "react";
 import { Check, LoaderCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import {
   Dialog,
@@ -21,6 +23,7 @@ import { ImportApplicationStep } from "@/src/components/applications/create/impo
 import { ImportErrorState } from "@/src/components/applications/create/import-error-state";
 import { ImportLoadingState } from "@/src/components/applications/create/import-loading-state";
 import { ReviewApplicationStep } from "@/src/components/applications/create/review-application-step";
+import { createApplication } from "@/src/server/actions/applications/create-application";
 import {
   validateApplication,
   validateImportInput,
@@ -82,11 +85,16 @@ export function AddApplicationDialog({
     cloneEmptyApplication,
   );
   const [fieldErrors, setFieldErrors] = useState<ApplicationFieldErrors>({});
+  const [formError, setFormError] = useState<string>();
   const [wasAnalyzed, setWasAnalyzed] = useState(false);
   const [savedStatus, setSavedStatus] =
     useState<ApplicationCreationStatus>("Wishlist");
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const timersRef = useRef<number[]>([]);
+  const submittingRef = useRef(false);
+  const sessionRef = useRef(0);
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
 
   function clearTimers() {
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -101,8 +109,10 @@ export function AddApplicationDialog({
     setImportError(undefined);
     setApplication(cloneEmptyApplication());
     setFieldErrors({});
+    setFormError(undefined);
     setWasAnalyzed(false);
     setSavedStatus("Wishlist");
+    submittingRef.current = false;
   }
 
   function openAddApplicationDialog() {
@@ -114,6 +124,7 @@ export function AddApplicationDialog({
   }
 
   function closeDialog() {
+    sessionRef.current += 1;
     clearTimers();
     setOpen(false);
     resetDialog();
@@ -176,6 +187,7 @@ export function AddApplicationDialog({
   function handleManualEntry() {
     setApplication(cloneEmptyApplication());
     setFieldErrors({});
+    setFormError(undefined);
     setWasAnalyzed(false);
     setStep("review");
   }
@@ -189,15 +201,16 @@ export function AddApplicationDialog({
       [field]: value,
     }));
 
-    if (field === "company" || field === "role" || field === "applicationUrl") {
-      setFieldErrors((currentErrors) => ({
-        ...currentErrors,
-        [field]: undefined,
-      }));
-    }
+    setFieldErrors((currentErrors) => ({
+      ...currentErrors,
+      [field]: undefined,
+    }));
+    setFormError(undefined);
   }
 
   function handleSave(status: ApplicationCreationStatus) {
+    if (submittingRef.current || isPending) return;
+
     const applicationToSave = { ...application, status };
     const errors = validateApplication(applicationToSave);
 
@@ -209,16 +222,62 @@ export function AddApplicationDialog({
 
     setApplication(applicationToSave);
     setFieldErrors({});
+    setFormError(undefined);
     setSavedStatus(status);
     setStep("saving");
+    submittingRef.current = true;
 
-    // TODO: Replace this timer with the real application server action or API.
-    const saveTimer = window.setTimeout(() => {
-      setStep("success");
-      const closeTimer = window.setTimeout(closeDialog, 900);
-      timersRef.current.push(closeTimer);
-    }, 650);
-    timersRef.current.push(saveTimer);
+    if (demoMode) {
+      const saveTimer = window.setTimeout(() => {
+        submittingRef.current = false;
+        setStep("success");
+        const closeTimer = window.setTimeout(closeDialog, 900);
+        timersRef.current.push(closeTimer);
+      }, 650);
+      timersRef.current.push(saveTimer);
+      return;
+    }
+
+    const session = sessionRef.current;
+
+    startTransition(async () => {
+      try {
+        const result = await createApplication(applicationToSave);
+        submittingRef.current = false;
+
+        if (session !== sessionRef.current) {
+          if (result.success) router.refresh();
+          return;
+        }
+
+        if (!result.success) {
+          const nextFieldErrors: ApplicationFieldErrors = {};
+          const fields = Object.keys(applicationToSave) as Array<
+            keyof ApplicationFormData
+          >;
+
+          fields.forEach((field) => {
+            const message = result.fieldErrors?.[field]?.[0];
+            if (message) nextFieldErrors[field] = message;
+          });
+
+          setFieldErrors(nextFieldErrors);
+          setFormError(result.formError);
+          setStep("review");
+          return;
+        }
+
+        router.refresh();
+        setStep("success");
+        const closeTimer = window.setTimeout(closeDialog, 900);
+        timersRef.current.push(closeTimer);
+      } catch {
+        submittingRef.current = false;
+        if (session !== sessionRef.current) return;
+        setFormError("We couldn’t save this application. Please try again.");
+        setStep("review");
+      }
+    });
   }
 
   return (
@@ -255,6 +314,7 @@ export function AddApplicationDialog({
             <ReviewApplicationStep
               application={application}
               errors={fieldErrors}
+              formError={formError}
               wasAnalyzed={wasAnalyzed}
               onChange={handleApplicationChange}
               onBack={() => setStep("import")}
@@ -271,8 +331,12 @@ export function AddApplicationDialog({
                 </DialogTitle>
                 <DialogDescription className="text-slate-500">
                   {step === "saving"
-                    ? "Finishing your mock application draft."
-                    : "This preview does not persist data yet."}
+                    ? demoMode
+                      ? "Finishing your mock application draft."
+                      : "Saving your application securely."
+                    : demoMode
+                      ? "This preview does not persist data."
+                      : "Your application is now available in CareerPilot."}
                 </DialogDescription>
               </DialogHeader>
               <div
@@ -300,7 +364,7 @@ export function AddApplicationDialog({
                       ? "Please wait a moment."
                       : demoMode
                         ? "Demo application created locally. Changes are not stored."
-                        : "Mock preview only — no data was permanently stored."}
+                        : "Saved to your applications."}
                   </p>
                 </div>
               </div>

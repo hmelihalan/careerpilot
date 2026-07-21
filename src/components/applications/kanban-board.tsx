@@ -1,9 +1,9 @@
 import { KanbanColumn } from "@/src/components/applications/kanban-column";
-import type { ApplicationStatus, MockApplication } from "@/src/types/application";
+import type { ApplicationListItem, ApplicationStatus } from "@/src/types/application";
 
 type KanbanStage = {
   title: ApplicationStatus;
-  applications: readonly MockApplication[];
+  applications: readonly ApplicationListItem[];
 };
 
 const stageTitles = [
@@ -16,7 +16,7 @@ const stageTitles = [
 ] as const satisfies readonly ApplicationStatus[];
 
 type KanbanBoardProps = {
-  applications: readonly MockApplication[];
+  applications: readonly ApplicationListItem[];
   applicationsPath: string;
   isFiltered: boolean;
 };

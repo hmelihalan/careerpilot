@@ -4,7 +4,7 @@ import { MapPin, MoreHorizontal, SearchX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ApplicationStatus, MockApplication } from "@/src/types/application";
+import type { ApplicationListItem, ApplicationStatus } from "@/src/types/application";
 
 const statusStyles: Record<ApplicationStatus, string> = {
   Wishlist: "bg-slate-100 text-slate-700",
@@ -16,7 +16,7 @@ const statusStyles: Record<ApplicationStatus, string> = {
 };
 
 type ApplicationsListProps = {
-  applications: readonly MockApplication[];
+  applications: readonly ApplicationListItem[];
   applicationsPath: string;
   onClearFilters: () => void;
 };
@@ -93,11 +93,11 @@ export function ApplicationsList({
                 <td className="px-4 py-3">
                   <span className="block text-slate-700">{application.location}</span>
                   <span className="mt-0.5 block text-[11px] text-slate-500">
-                    {application.workMode}
+                    {application.workMode ?? "Work mode not specified"}
                   </span>
                 </td>
                 <td className="px-4 py-3 font-medium text-slate-900">
-                  {application.matchScore}%
+                  {application.matchScore === null ? "—" : `${application.matchScore}%`}
                 </td>
                 <td className="px-4 py-3 text-slate-500">{application.updatedAt}</td>
                 <td className="px-4 py-3 text-right">
@@ -141,9 +141,14 @@ export function ApplicationsList({
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
                     <span className="flex items-center gap-1">
                       <MapPin className="size-3" aria-hidden="true" />
-                      {application.location} · {application.workMode}
+                      {application.location}
+                      {application.workMode ? ` · ${application.workMode}` : ""}
                     </span>
-                    <span>{application.matchScore}% match</span>
+                    <span>
+                      {application.matchScore === null
+                        ? "Not scored"
+                        : `${application.matchScore}% match`}
+                    </span>
                     <span>Updated {application.updatedAt}</span>
                   </div>
                 </div>

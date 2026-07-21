@@ -166,7 +166,12 @@ export function ApplicationFormFields({
               value={application.workMode || null}
               onValueChange={(value) => onChange("workMode", value ?? "")}
             >
-              <SelectTrigger id="application-work-mode" className="h-9 w-full border-slate-200 bg-white">
+              <SelectTrigger
+                id="application-work-mode"
+                aria-invalid={Boolean(errors.workMode)}
+                aria-describedby={errors.workMode ? "application-work-mode-error" : undefined}
+                className="h-9 w-full border-slate-200 bg-white"
+              >
                 <SelectValue placeholder="Select work mode" />
               </SelectTrigger>
               <SelectContent>
@@ -177,6 +182,11 @@ export function ApplicationFormFields({
                 ))}
               </SelectContent>
             </Select>
+            {errors.workMode ? (
+              <p id="application-work-mode-error" className="text-xs font-medium text-red-600">
+                {errors.workMode}
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-1.5">
@@ -187,7 +197,12 @@ export function ApplicationFormFields({
               value={application.employmentType || null}
               onValueChange={(value) => onChange("employmentType", value ?? "")}
             >
-              <SelectTrigger id="application-employment-type" className="h-9 w-full border-slate-200 bg-white">
+              <SelectTrigger
+                id="application-employment-type"
+                aria-invalid={Boolean(errors.employmentType)}
+                aria-describedby={errors.employmentType ? "application-employment-type-error" : undefined}
+                className="h-9 w-full border-slate-200 bg-white"
+              >
                 <SelectValue placeholder="Select employment type" />
               </SelectTrigger>
               <SelectContent>
@@ -198,13 +213,19 @@ export function ApplicationFormFields({
                 ))}
               </SelectContent>
             </Select>
+            {errors.employmentType ? (
+              <p id="application-employment-type-error" className="text-xs font-medium text-red-600">
+                {errors.employmentType}
+              </p>
+            ) : null}
           </div>
 
           <TextField
             id="application-source"
             label="Source"
             value={application.source}
-            placeholder="LinkedIn, company site..."
+            error={errors.source}
+            placeholder="LinkedIn, Company website, Referral..."
             onChange={(value) => onChange("source", value)}
           />
           <TextField
@@ -212,6 +233,7 @@ export function ApplicationFormFields({
             label="Deadline"
             type="date"
             value={application.deadline}
+            error={errors.deadline}
             onChange={(value) => onChange("deadline", value)}
           />
           <div className="sm:col-span-2">
@@ -252,6 +274,11 @@ export function ApplicationFormFields({
             <p className="py-1 text-xs text-slate-500">No skills added yet.</p>
           )}
         </div>
+        {errors.requiredSkills ? (
+          <p className="mt-2 text-xs font-medium text-red-600">
+            {errors.requiredSkills}
+          </p>
+        ) : null}
         <div className="mt-3 flex gap-2">
           <div className="min-w-0 flex-1">
             <Label htmlFor="application-new-skill" className="sr-only">
@@ -288,8 +315,15 @@ export function ApplicationFormFields({
           onChange={(event) => onChange("description", event.target.value)}
           placeholder="Add the job description, responsibilities, or notes..."
           rows={6}
+          aria-invalid={Boolean(errors.description)}
+          aria-describedby={errors.description ? "application-description-error" : undefined}
           className="min-h-32 resize-y border-slate-200 bg-white leading-5"
         />
+        {errors.description ? (
+          <p id="application-description-error" className="mt-2 text-xs font-medium text-red-600">
+            {errors.description}
+          </p>
+        ) : null}
       </FormSection>
 
       <FormSection title="Tracking">
@@ -313,6 +347,9 @@ export function ApplicationFormFields({
               <SelectItem value="Applied">Applied</SelectItem>
             </SelectContent>
           </Select>
+          {errors.status ? (
+            <p className="text-xs font-medium text-red-600">{errors.status}</p>
+          ) : null}
           <p className="text-xs leading-5 text-slate-500">
             New applications can start in Wishlist or Applied.
           </p>

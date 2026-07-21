@@ -4,12 +4,12 @@ import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ApplicationCard } from "@/src/components/applications/application-card";
-import type { MockApplication } from "@/src/types/application";
+import type { ApplicationListItem } from "@/src/types/application";
 import { useAddApplicationDialog } from "@/src/components/applications/create/add-application-dialog";
 
 type KanbanColumnProps = {
   title: string;
-  applications: readonly MockApplication[];
+  applications: readonly ApplicationListItem[];
   applicationsPath: string;
   showFilteredEmptyState: boolean;
 };

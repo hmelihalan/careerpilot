@@ -11,24 +11,32 @@ export type ApplicationStatus =
 
 export type ApplicationWorkMode = "Remote" | "Hybrid" | "On-site";
 
-export type MockApplication = {
+export type ApplicationListItem = {
   id: string;
   slug: string;
   initials: string;
   role: string;
   company: string;
   status: ApplicationStatus;
-  matchScore: number;
+  matchScore: number | null;
   location: string;
+  workMode: ApplicationWorkMode | null;
+  updatedAt: string;
+  skills: readonly string[];
+};
+
+export type MockApplication = Omit<
+  ApplicationListItem,
+  "matchScore" | "workMode"
+> & {
+  matchScore: number;
   workMode: ApplicationWorkMode;
   employmentType: string;
   appliedDate: string;
   appliedAgo: string;
-  updatedAt: string;
   source: string;
   deadline: string;
   applicationUrl: string;
-  skills: readonly string[];
   description: string;
 };
 
@@ -47,8 +55,24 @@ export type ApplicationFormData = {
 };
 
 export type ApplicationFieldErrors = Partial<
-  Record<"company" | "role" | "applicationUrl", string>
+  Record<keyof ApplicationFormData, string>
 >;
+
+export type CreateApplicationFieldErrors = Partial<
+  Record<keyof ApplicationFormData, string[]>
+>;
+
+export type CreateApplicationResult =
+  | {
+      success: true;
+      applicationId: string;
+      slug: string;
+    }
+  | {
+      success: false;
+      fieldErrors?: CreateApplicationFieldErrors;
+      formError: string;
+    };
 
 export type AddApplicationStep =
   | "import"

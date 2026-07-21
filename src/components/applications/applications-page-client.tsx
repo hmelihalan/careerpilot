@@ -16,13 +16,8 @@ import { KanbanBoard } from "@/src/components/applications/kanban-board";
 import { DemoModeNotice } from "@/src/components/shared/demo-mode-notice";
 import { appRoutes } from "@/src/constants/navigation";
 import { mockApplications } from "@/src/constants/mock-applications";
+import type { ApplicationListItem } from "@/src/types/application";
 import type { AppMode } from "@/src/types/navigation";
-
-const locations = Array.from(
-  new Set(mockApplications.map((application) => application.location)),
-).sort((firstLocation, secondLocation) =>
-  firstLocation.localeCompare(secondLocation),
-);
 
 function countActiveFilters(filters: ApplicationsFilters): number {
   return [
@@ -34,10 +29,12 @@ function countActiveFilters(filters: ApplicationsFilters): number {
 }
 
 type ApplicationsPageClientProps = {
+  applications?: readonly ApplicationListItem[];
   mode?: AppMode;
 };
 
 export function ApplicationsPageClient({
+  applications = mockApplications,
   mode = "authenticated",
 }: ApplicationsPageClientProps) {
   const applicationsPath = appRoutes[mode].applications;
@@ -49,9 +46,17 @@ export function ApplicationsPageClient({
 
   const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase();
   const activeFilterCount = countActiveFilters(filters);
+  const locations = useMemo(
+    () =>
+      Array.from(new Set(applications.map((application) => application.location))).sort(
+        (firstLocation, secondLocation) =>
+          firstLocation.localeCompare(secondLocation),
+      ),
+    [applications],
+  );
   const filteredApplications = useMemo(
     () =>
-      mockApplications.filter((application) => {
+      applications.filter((application) => {
         const searchableText = [
           application.role,
           application.company,
@@ -71,7 +76,10 @@ export function ApplicationsPageClient({
           filters.workMode === "All" || application.workMode === filters.workMode;
         const matchesLocation =
           filters.location === "All" || application.location === filters.location;
-        const matchesScore = application.matchScore >= filters.minimumMatchScore;
+        const matchesScore =
+          filters.minimumMatchScore === 0 ||
+          (application.matchScore !== null &&
+            application.matchScore >= filters.minimumMatchScore);
 
         return (
           matchesSearch &&
@@ -81,7 +89,7 @@ export function ApplicationsPageClient({
           matchesScore
         );
       }),
-    [filters, normalizedSearchQuery],
+    [applications, filters, normalizedSearchQuery],
   );
 
   const isFiltered = Boolean(normalizedSearchQuery) || activeFilterCount > 0;
@@ -107,9 +115,9 @@ export function ApplicationsPageClient({
             className="rounded-md bg-slate-200/70 px-2 font-medium text-slate-600"
             aria-live="polite"
           >
-            {filteredApplications.length === mockApplications.length
-              ? `${mockApplications.length} total`
-              : `${filteredApplications.length} of ${mockApplications.length}`}
+            {filteredApplications.length === applications.length
+              ? `${applications.length} total`
+              : `${filteredApplications.length} of ${applications.length}`}
           </Badge>
         </div>
         <p className="mt-1 text-sm text-slate-500">
@@ -129,7 +137,16 @@ export function ApplicationsPageClient({
         onClearFilters={clearFilters}
       />
 
-      {view === "board" ? (
+      {applications.length === 0 ? (
+        <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white px-5 py-10 text-center">
+          <h2 className="text-sm font-medium text-slate-900">
+            No applications yet
+          </h2>
+          <p className="mt-1 max-w-md text-sm leading-6 text-slate-500">
+            Use Add Application to create your first tracked opportunity.
+          </p>
+        </div>
+      ) : view === "board" ? (
         <KanbanBoard
           applications={filteredApplications}
           isFiltered={isFiltered}
