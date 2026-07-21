@@ -1,4 +1,10 @@
-import { BriefcaseBusiness, CalendarCheck2, Sparkles, Trophy } from "lucide-react";
+import {
+  BriefcaseBusiness,
+  CalendarCheck2,
+  Percent,
+  Sparkles,
+  Trophy,
+} from "lucide-react";
 
 import { AiRecommendation } from "@/src/components/dashboard/ai-recommendation";
 import { MetricCard } from "@/src/components/dashboard/metric-card";
@@ -7,9 +13,9 @@ import { RecentApplications } from "@/src/components/dashboard/recent-applicatio
 import { UpcomingInterview } from "@/src/components/dashboard/upcoming-interview";
 import { DemoModeNotice } from "@/src/components/shared/demo-mode-notice";
 import { appRoutes } from "@/src/constants/navigation";
-import type { AppMode } from "@/src/types/navigation";
+import type { DashboardViewModel } from "@/src/types/dashboard";
 
-const metrics = [
+const demoMetrics = [
   {
     label: "Total Applications",
     value: "31",
@@ -37,18 +43,57 @@ const metrics = [
   },
 ] as const;
 
-type DashboardPageContentProps = {
-  mode?: AppMode;
-};
+type DashboardPageContentProps =
+  | {
+      mode: "demo";
+      dashboard?: never;
+    }
+  | {
+      mode?: "authenticated";
+      dashboard: DashboardViewModel;
+    };
 
-export function DashboardPageContent({
-  mode = "authenticated",
-}: DashboardPageContentProps) {
-  const applicationsPath = appRoutes[mode].applications;
+export function DashboardPageContent(props: DashboardPageContentProps) {
+  const demoMode = props.mode === "demo";
+  const applicationsPath = demoMode
+    ? appRoutes.demo.applications
+    : appRoutes.authenticated.applications;
+  const metrics = demoMode
+    ? demoMetrics
+    : [
+        {
+          label: "Total Applications",
+          value: props.dashboard.statusCounts.total.toString(),
+          trend: "Across all tracked statuses",
+          icon: BriefcaseBusiness,
+          unchanged: true,
+        },
+        {
+          label: "Interviews",
+          value: props.dashboard.statusCounts.interview.toString(),
+          trend: "Currently in the interview stage",
+          icon: CalendarCheck2,
+          unchanged: true,
+        },
+        {
+          label: "Offers",
+          value: props.dashboard.statusCounts.offer.toString(),
+          trend: "Current offers",
+          icon: Trophy,
+          unchanged: true,
+        },
+        {
+          label: "Response Rate",
+          value: `${props.dashboard.responseRate}%`,
+          trend: `${props.dashboard.eligibleApplicationCount} eligible applications`,
+          icon: Percent,
+          unchanged: true,
+        },
+      ];
 
   return (
     <div className="space-y-4">
-      {mode === "demo" ? <DemoModeNotice /> : null}
+      {demoMode ? <DemoModeNotice /> : null}
 
       <section aria-labelledby="dashboard-greeting">
         <h1
@@ -62,23 +107,49 @@ export function DashboardPageContent({
         </p>
       </section>
 
-      <section aria-label="Job search metrics" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section
+        aria-label="Job search metrics"
+        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+      >
         {metrics.map((metric) => (
           <MetricCard key={metric.label} {...metric} />
         ))}
       </section>
 
-      <section aria-label="Application overview" className="grid items-start gap-3 xl:grid-cols-10">
+      <section
+        aria-label="Application overview"
+        className="grid items-start gap-3 xl:grid-cols-10"
+      >
         <div className="min-w-0 xl:col-span-7">
-          <PipelinePreview applicationsPath={applicationsPath} />
+          {demoMode ? (
+            <PipelinePreview mode="demo" applicationsPath={applicationsPath} />
+          ) : (
+            <PipelinePreview
+              applicationsPath={applicationsPath}
+              dashboard={props.dashboard}
+            />
+          )}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:col-span-3 xl:grid-cols-1">
-          <UpcomingInterview applicationsPath={applicationsPath} />
-          <AiRecommendation applicationsPath={applicationsPath} />
+          <UpcomingInterview
+            applicationsPath={applicationsPath}
+            unavailable={!demoMode}
+          />
+          <AiRecommendation
+            applicationsPath={applicationsPath}
+            unavailable={!demoMode}
+          />
         </div>
       </section>
 
-      <RecentApplications applicationsPath={applicationsPath} />
+      {demoMode ? (
+        <RecentApplications mode="demo" applicationsPath={applicationsPath} />
+      ) : (
+        <RecentApplications
+          applicationsPath={applicationsPath}
+          applications={props.dashboard.recentApplications}
+        />
+      )}
     </div>
   );
 }

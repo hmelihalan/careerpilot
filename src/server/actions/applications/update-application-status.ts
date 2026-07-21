@@ -87,6 +87,7 @@ export async function updateApplicationStatus(
 
     revalidatePath("/applications");
     revalidatePath(`/applications/${slug}`);
+    revalidatePath("/dashboard");
 
     return {
       success: true,

@@ -5,10 +5,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type UpcomingInterviewProps = {
   applicationsPath: string;
+  unavailable?: boolean;
 };
 
-export function UpcomingInterview({ applicationsPath }: UpcomingInterviewProps) {
+export function UpcomingInterview({
+  applicationsPath,
+  unavailable = false,
+}: UpcomingInterviewProps) {
   const applicationHref = `${applicationsPath}/kron-full-stack-intern`;
+
+  if (unavailable) {
+    return (
+      <Card size="sm" className="h-full border border-slate-200 shadow-none ring-0">
+        <CardHeader>
+          <CardTitle>Upcoming Interview</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+            <CalendarDays className="size-4" aria-hidden="true" />
+          </span>
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            Interview scheduling is not available yet.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card size="sm" className="h-full border border-slate-200 shadow-none ring-0">
       <CardHeader>
