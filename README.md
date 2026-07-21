@@ -41,7 +41,7 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The `postinstall` script also runs `prisma generate`, so a normal `pnpm install` prepares the generated client. Running generation explicitly is useful after changing the Prisma schema.
+The `postinstall` script generates Prisma Client with `prisma.generate.config.ts`, which does not require a database connection. A normal `pnpm install` therefore prepares the generated client even when migration credentials are unavailable. Running `pnpm prisma generate` explicitly is useful after changing the Prisma schema and uses the main Prisma configuration.
 
 ## Validation
 
@@ -81,7 +81,7 @@ pnpm prisma migrate deploy
 
 Do not run `prisma migrate dev` in production. Do not run migrations from application requests or server actions.
 
-Vercel must have all four required environment variables available during the relevant install, build, migration, and runtime phases. In particular, `DIRECT_URL` must be available when Prisma configuration or migration commands are evaluated, and `DATABASE_URL` must be available to the deployed application runtime.
+Vercel must have the Clerk variables and `DATABASE_URL` available during the relevant build and runtime phases. Install-time client generation does not require a database URL. `DIRECT_URL` must be available only in the controlled environment where Prisma migration commands are run.
 
 ## Route modes
 
