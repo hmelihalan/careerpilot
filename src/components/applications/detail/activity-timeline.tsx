@@ -9,17 +9,21 @@ import {
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { ApplicationDetailStatusHistory } from "@/src/types/application";
 
 type ActivityEvent = {
+  id: string;
   title: string;
   description: string;
   date: string;
   time: string;
+  dateTime?: string;
   icon: LucideIcon;
 };
 
-const events: readonly ActivityEvent[] = [
+const mockEvents: readonly ActivityEvent[] = [
   {
+    id: "application-created",
     title: "Application created",
     description: "The Kron Full Stack Intern opportunity was added to CareerPilot.",
     date: "July 8, 2026",
@@ -27,6 +31,7 @@ const events: readonly ActivityEvent[] = [
     icon: FilePlus2,
   },
   {
+    id: "wishlist-to-applied",
     title: "Status changed from Wishlist to Applied",
     description: "The application was submitted through LinkedIn.",
     date: "July 8, 2026",
@@ -34,6 +39,7 @@ const events: readonly ActivityEvent[] = [
     icon: Workflow,
   },
   {
+    id: "resume-match-complete",
     title: "Resume Match analysis completed — 84%",
     description: "Software Engineering Resume was compared with the job requirements.",
     date: "July 8, 2026",
@@ -41,6 +47,7 @@ const events: readonly ActivityEvent[] = [
     icon: Sparkles,
   },
   {
+    id: "cover-letter-generated",
     title: "Cover letter generated",
     description: "A professional cover letter was created for the Kron application.",
     date: "July 9, 2026",
@@ -48,6 +55,7 @@ const events: readonly ActivityEvent[] = [
     icon: FileText,
   },
   {
+    id: "applied-to-interview",
     title: "Status changed from Applied to Interview",
     description: "Kron invited you to continue to the technical interview stage.",
     date: "July 19, 2026",
@@ -55,6 +63,7 @@ const events: readonly ActivityEvent[] = [
     icon: FileCheck2,
   },
   {
+    id: "interview-scheduled",
     title: "Technical interview scheduled",
     description: "The technical interview was scheduled for tomorrow at 14:30 on Google Meet.",
     date: "July 20, 2026",
@@ -63,7 +72,41 @@ const events: readonly ActivityEvent[] = [
   },
 ];
 
-export function ActivityTimeline() {
+type ActivityTimelineProps = {
+  history?: readonly ApplicationDetailStatusHistory[];
+};
+
+function toActivityEvent(
+  history: ApplicationDetailStatusHistory,
+): ActivityEvent {
+  const changedAt = new Date(history.changedAt);
+  const isCreation = history.fromStatus === null;
+
+  return {
+    id: history.id,
+    title: isCreation
+      ? `Application created in ${history.toStatus}`
+      : `Status changed from ${history.fromStatus} to ${history.toStatus}`,
+    description: isCreation
+      ? `The initial application status was recorded as ${history.toStatus}.`
+      : `The application status was updated to ${history.toStatus}.`,
+    date: new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(
+      changedAt,
+    ),
+    time: new Intl.DateTimeFormat("en-US", { timeStyle: "short" }).format(
+      changedAt,
+    ),
+    dateTime: history.changedAt,
+    icon: isCreation ? FilePlus2 : Workflow,
+  };
+}
+
+export function ActivityTimeline({ history }: ActivityTimelineProps) {
+  const events =
+    history === undefined ? mockEvents : history.map(toActivityEvent);
+  const onlyInitialCreation =
+    history?.length === 1 && history[0]?.fromStatus === null;
+
   return (
     <Card size="sm" className="border border-slate-200 bg-white shadow-none ring-0">
       <CardHeader className="border-b border-slate-100">
@@ -73,38 +116,55 @@ export function ActivityTimeline() {
         </p>
       </CardHeader>
       <CardContent>
-        <ol aria-label="Application activity">
-          {events.map((event, index) => {
-            const Icon = event.icon;
-            const isLast = index === events.length - 1;
+        {events.length > 0 ? (
+          <ol aria-label="Application activity">
+            {events.map((event, index) => {
+              const Icon = event.icon;
+              const isLast = index === events.length - 1;
 
-            return (
-              <li key={event.title} className="relative flex gap-3.5 pb-5 last:pb-0">
-                {!isLast && (
-                  <span
-                    className="absolute left-3.75 top-8 h-[calc(100%-2rem)] w-px bg-slate-200"
-                    aria-hidden="true"
-                  />
-                )}
-                <span className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600">
-                  <Icon className="size-3.5" aria-hidden="true" />
-                </span>
-                <div className="min-w-0 flex-1 pt-0.5 sm:flex sm:items-start sm:justify-between sm:gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-slate-900">{event.title}</h3>
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      {event.description}
-                    </p>
+              return (
+                <li key={event.id} className="relative flex gap-3.5 pb-5 last:pb-0">
+                  {!isLast && (
+                    <span
+                      className="absolute left-3.75 top-8 h-[calc(100%-2rem)] w-px bg-slate-200"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border border-indigo-100 bg-indigo-50 text-indigo-600">
+                    <Icon className="size-3.5" aria-hidden="true" />
+                  </span>
+                  <div className="min-w-0 flex-1 pt-0.5 sm:flex sm:items-start sm:justify-between sm:gap-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-slate-900">
+                        {event.title}
+                      </h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        {event.description}
+                      </p>
+                    </div>
+                    <time
+                      dateTime={event.dateTime}
+                      className="mt-1 block shrink-0 text-[11px] text-slate-400 sm:mt-0 sm:text-right"
+                    >
+                      <span className="block">{event.date}</span>
+                      <span className="mt-0.5 block">{event.time}</span>
+                    </time>
                   </div>
-                  <time className="mt-1 block shrink-0 text-[11px] text-slate-400 sm:mt-0 sm:text-right">
-                    <span className="block">{event.date}</span>
-                    <span className="mt-0.5 block">{event.time}</span>
-                  </time>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+                </li>
+              );
+            })}
+          </ol>
+        ) : (
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center">
+            <p className="text-sm text-slate-500">No status history yet.</p>
+          </div>
+        )}
+
+        {onlyInitialCreation ? (
+          <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            No status changes since this application was created.
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );

@@ -46,13 +46,15 @@ function DescriptionList({ items }: { items: readonly string[] }) {
 type JobDescriptionPanelProps = {
   role: string;
   company: string;
-  description: string;
+  description: string | null;
+  showMockSections?: boolean;
 };
 
 export function JobDescriptionPanel({
   role,
   company,
   description,
+  showMockSections = true,
 }: JobDescriptionPanelProps) {
   return (
     <Card size="sm" className="border border-slate-200 bg-white shadow-none ring-0">
@@ -74,38 +76,42 @@ export function JobDescriptionPanel({
             <h3 id="about-the-role" className="text-xs font-medium text-slate-950">
               About the Role
             </h3>
-            <p className="mt-2 text-xs leading-5 text-slate-600">
-              {description}
+            <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-slate-600">
+              {description ?? "No job description saved."}
             </p>
           </section>
 
-          <section aria-labelledby="responsibilities">
-            <h3 id="responsibilities" className="mb-2 text-xs font-medium text-slate-950">
-              Responsibilities
-            </h3>
-            <DescriptionList items={responsibilities} />
-          </section>
+          {showMockSections ? (
+            <>
+              <section aria-labelledby="responsibilities">
+                <h3 id="responsibilities" className="mb-2 text-xs font-medium text-slate-950">
+                  Responsibilities
+                </h3>
+                <DescriptionList items={responsibilities} />
+              </section>
 
-          <section aria-labelledby="requirements">
-            <h3 id="requirements" className="mb-2 text-xs font-medium text-slate-950">
-              Requirements
-            </h3>
-            <DescriptionList items={requirements} />
-          </section>
+              <section aria-labelledby="requirements">
+                <h3 id="requirements" className="mb-2 text-xs font-medium text-slate-950">
+                  Requirements
+                </h3>
+                <DescriptionList items={requirements} />
+              </section>
 
-          <section aria-labelledby="nice-to-have">
-            <h3 id="nice-to-have" className="mb-2 text-xs font-medium text-slate-950">
-              Nice to Have
-            </h3>
-            <DescriptionList items={niceToHave} />
-          </section>
+              <section aria-labelledby="nice-to-have">
+                <h3 id="nice-to-have" className="mb-2 text-xs font-medium text-slate-950">
+                  Nice to Have
+                </h3>
+                <DescriptionList items={niceToHave} />
+              </section>
 
-          <section aria-labelledby="benefits">
-            <h3 id="benefits" className="mb-2 text-xs font-medium text-slate-950">
-              Benefits
-            </h3>
-            <DescriptionList items={benefits} />
-          </section>
+              <section aria-labelledby="benefits">
+                <h3 id="benefits" className="mb-2 text-xs font-medium text-slate-950">
+                  Benefits
+                </h3>
+                <DescriptionList items={benefits} />
+              </section>
+            </>
+          ) : null}
         </div>
       </CardContent>
     </Card>

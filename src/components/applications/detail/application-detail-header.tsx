@@ -18,10 +18,10 @@ export type ApplicationHeaderData = {
   role: string;
   company: string;
   status: string;
-  match: number;
+  match?: number;
   location: string;
   workMode: string;
-  appliedAgo: string;
+  dateLabel: string;
 };
 
 type ApplicationDetailHeaderProps = {
@@ -67,10 +67,12 @@ export function ApplicationDetailHeader({
                 <Badge className="rounded-md bg-violet-50 px-2 font-medium text-violet-700">
                   {application.status}
                 </Badge>
-                <Badge className="rounded-md bg-indigo-50 px-2 font-medium text-indigo-700">
-                  <Sparkles className="size-3" aria-hidden="true" />
-                  {application.match}% AI match
-                </Badge>
+                {application.match !== undefined ? (
+                  <Badge className="rounded-md bg-indigo-50 px-2 font-medium text-indigo-700">
+                    <Sparkles className="size-3" aria-hidden="true" />
+                    {application.match}% AI match
+                  </Badge>
+                ) : null}
               </div>
               <p className="mt-1 text-sm font-medium text-slate-600">
                 {application.company}
@@ -86,7 +88,7 @@ export function ApplicationDetailHeader({
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Clock3 className="size-3.5 text-slate-400" aria-hidden="true" />
-                  Applied {application.appliedAgo}
+                  {application.dateLabel}
                 </span>
               </div>
             </div>
@@ -98,8 +100,8 @@ export function ApplicationDetailHeader({
               variant="outline"
               size="sm"
               className="rounded-lg"
-              disabled={demoMode}
-              title={demoMode ? "Editing is unavailable in demo mode" : undefined}
+              disabled
+              title={demoMode ? "Editing is unavailable in demo mode" : "Editing is coming next"}
             >
               <Pencil data-icon="inline-start" aria-hidden="true" />
               Edit
@@ -108,8 +110,8 @@ export function ApplicationDetailHeader({
               type="button"
               size="sm"
               className="rounded-lg"
-              disabled={demoMode}
-              title={demoMode ? "Status changes are unavailable in demo mode" : undefined}
+              disabled
+              title={demoMode ? "Status changes are unavailable in demo mode" : "Status changes are coming next"}
             >
               Change Status
               <ChevronDown data-icon="inline-end" aria-hidden="true" />
@@ -119,8 +121,8 @@ export function ApplicationDetailHeader({
               variant="outline"
               size="sm"
               className="rounded-lg"
-              disabled={demoMode}
-              title={demoMode ? "Actions are unavailable in demo mode" : undefined}
+              disabled
+              title={demoMode ? "Actions are unavailable in demo mode" : "More actions are coming next"}
             >
               <Ellipsis data-icon="inline-start" aria-hidden="true" />
               More Actions

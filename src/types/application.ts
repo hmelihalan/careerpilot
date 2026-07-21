@@ -25,6 +25,45 @@ export type ApplicationListItem = {
   skills: readonly string[];
 };
 
+export type ApplicationDetailNote = {
+  id: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ApplicationDetailStatusHistory = {
+  id: string;
+  fromStatus: ApplicationStatus | null;
+  toStatus: ApplicationStatus;
+  changedAt: string;
+};
+
+export type ApplicationDetailViewModel = {
+  id: string;
+  slug: string;
+  initials: string;
+  company: string;
+  role: string;
+  status: ApplicationStatus;
+  location: string | null;
+  workMode: ApplicationWorkMode | null;
+  employmentType: string | null;
+  source: string | null;
+  applicationUrl: string | null;
+  jobDescription: string | null;
+  salary: string | null;
+  skills: readonly string[];
+  dates: {
+    appliedAt: string | null;
+    deadline: string | null;
+  };
+  notes: readonly ApplicationDetailNote[];
+  statusHistory: readonly ApplicationDetailStatusHistory[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type MockApplication = Omit<
   ApplicationListItem,
   "matchScore" | "workMode"

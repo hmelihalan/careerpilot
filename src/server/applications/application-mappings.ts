@@ -1,6 +1,9 @@
 import "server-only";
 
-import type { Application as PrismaApplicationRecord } from "../../generated/prisma/client";
+import type {
+  Application as PrismaApplicationRecord,
+  Prisma,
+} from "../../generated/prisma/client";
 import {
   ApplicationSource as PrismaApplicationSource,
   ApplicationStatus as PrismaApplicationStatus,
@@ -13,6 +16,7 @@ import {
 } from "../../generated/prisma/enums";
 import type {
   ApplicationCreationStatus,
+  ApplicationDetailViewModel,
   ApplicationListItem,
   ApplicationStatus as UiApplicationStatus,
   ApplicationWorkMode,
@@ -80,6 +84,13 @@ export const uiSourceToPrisma = {
   Other: PrismaApplicationSource.OTHER,
 } as const satisfies Record<string, ApplicationSource>;
 
+type PrismaApplicationDetailRecord = Prisma.ApplicationGetPayload<{
+  include: {
+    notes: true;
+    statusHistory: true;
+  };
+}>;
+
 function getInitials(company: string): string {
   const initials = company
     .split(/\s+/)
@@ -111,5 +122,83 @@ export function toApplicationListItem(
       day: "numeric",
     }).format(application.updatedAt),
     skills: application.requiredSkills,
+  };
+}
+
+function normalizeOptionalText(value: string | null): string | null {
+  const normalized = value?.trim();
+  return normalized || null;
+}
+
+function formatSalary(
+  salaryMin: number | null,
+  salaryMax: number | null,
+  currency: string | null,
+): string | null {
+  if (salaryMin === null && salaryMax === null) return null;
+
+  const prefix = currency?.trim() ? `${currency.trim().toUpperCase()} ` : "";
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount);
+
+  if (salaryMin !== null && salaryMax !== null) {
+    return `${prefix}${formatAmount(salaryMin)}–${formatAmount(salaryMax)}`;
+  }
+
+  if (salaryMin !== null) {
+    return `From ${prefix}${formatAmount(salaryMin)}`;
+  }
+
+  return salaryMax === null
+    ? null
+    : `Up to ${prefix}${formatAmount(salaryMax)}`;
+}
+
+export function toApplicationDetailViewModel(
+  application: PrismaApplicationDetailRecord,
+): ApplicationDetailViewModel {
+  return {
+    id: application.id,
+    slug: application.slug,
+    initials: getInitials(application.company),
+    company: application.company,
+    role: application.role,
+    status: prismaStatusToUi[application.status],
+    location: normalizeOptionalText(application.location),
+    workMode: application.workMode
+      ? prismaWorkModeToUi[application.workMode]
+      : null,
+    employmentType: application.employmentType
+      ? prismaEmploymentTypeToUi[application.employmentType]
+      : null,
+    source: application.source ? prismaSourceToUi[application.source] : null,
+    applicationUrl: normalizeOptionalText(application.applicationUrl),
+    jobDescription: normalizeOptionalText(application.description),
+    salary: formatSalary(
+      application.salaryMin,
+      application.salaryMax,
+      application.currency,
+    ),
+    skills: application.requiredSkills,
+    dates: {
+      appliedAt: application.appliedAt?.toISOString() ?? null,
+      deadline: application.deadline?.toISOString() ?? null,
+    },
+    notes: application.notes.map((note) => ({
+      id: note.id,
+      content: note.content,
+      createdAt: note.createdAt.toISOString(),
+      updatedAt: note.updatedAt.toISOString(),
+    })),
+    statusHistory: application.statusHistory.map((history) => ({
+      id: history.id,
+      fromStatus: history.fromStatus
+        ? prismaStatusToUi[history.fromStatus]
+        : null,
+      toStatus: prismaStatusToUi[history.toStatus],
+      changedAt: history.changedAt.toISOString(),
+    })),
+    createdAt: application.createdAt.toISOString(),
+    updatedAt: application.updatedAt.toISOString(),
   };
 }
