@@ -197,3 +197,14 @@ export type UpdateApplicationResult =
       >;
       formError: string;
     };
+
+export type DeleteApplicationResult =
+  | {
+      success: true;
+    }
+  | {
+      success: false;
+      reason: "validation" | "not-found" | "server";
+      fieldErrors?: { slug?: string[] };
+      formError: string;
+    };

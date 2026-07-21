@@ -148,6 +148,18 @@ export type UpdateApplicationStatusInput = z.infer<
   typeof updateApplicationStatusSchema
 >;
 
+export const deleteApplicationSchema = z
+  .object({
+    slug: z
+      .string()
+      .trim()
+      .min(1, "A valid application is required.")
+      .max(160, "The application identifier is invalid."),
+  })
+  .strict();
+
+export type DeleteApplicationInput = z.infer<typeof deleteApplicationSchema>;
+
 export const updateApplicationSchema = z
   .object({
     slug: z

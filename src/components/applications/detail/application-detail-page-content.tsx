@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActivityTimeline } from "@/src/components/applications/detail/activity-timeline";
+import { ApplicationDeleteDialog } from "@/src/components/applications/detail/application-delete-dialog";
 import { ApplicationEditDialog } from "@/src/components/applications/detail/application-edit-dialog";
 import type { ApplicationHeaderData } from "@/src/components/applications/detail/application-detail-header";
 import { ApplicationDetailHeader } from "@/src/components/applications/detail/application-detail-header";
@@ -70,6 +71,7 @@ export function ApplicationDetailPageContent(
   props: ApplicationDetailPageContentProps,
 ) {
   let applicationsPath: string;
+  let deleteControl: ReactNode;
   let demoMode: boolean;
   let editControl: ReactNode;
   let headerApplication: ApplicationHeaderData;
@@ -244,6 +246,13 @@ export function ApplicationDetailPageContent(
         content: <ActivityTimeline history={application.statusHistory} />,
       },
     ];
+    deleteControl = (
+      <ApplicationDeleteDialog
+        slug={application.slug}
+        company={application.company}
+        role={application.role}
+      />
+    );
     editControl = (
       <ApplicationEditDialog
         slug={application.slug}
@@ -266,6 +275,7 @@ export function ApplicationDetailPageContent(
         applicationsPath={applicationsPath}
         demoMode={demoMode}
         application={headerApplication}
+        deleteControl={deleteControl}
         editControl={editControl}
         statusControl={statusControl}
       />

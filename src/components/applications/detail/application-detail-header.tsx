@@ -29,6 +29,7 @@ type ApplicationDetailHeaderProps = {
   application: ApplicationHeaderData;
   applicationsPath: string;
   demoMode?: boolean;
+  deleteControl?: ReactNode;
   editControl?: ReactNode;
   statusControl?: ReactNode;
 };
@@ -37,6 +38,7 @@ export function ApplicationDetailHeader({
   application,
   applicationsPath,
   demoMode = false,
+  deleteControl,
   editControl,
   statusControl,
 }: ApplicationDetailHeaderProps) {
@@ -129,17 +131,23 @@ export function ApplicationDetailHeader({
                 <ChevronDown data-icon="inline-end" aria-hidden="true" />
               </Button>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-lg"
-              disabled
-              title={demoMode ? "Actions are unavailable in demo mode" : "More actions are coming next"}
-            >
-              <Ellipsis data-icon="inline-start" aria-hidden="true" />
-              More Actions
-            </Button>
+            {deleteControl ?? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-lg"
+                disabled
+                title={
+                  demoMode
+                    ? "Actions are unavailable in demo mode"
+                    : "More actions are coming next"
+                }
+              >
+                <Ellipsis data-icon="inline-start" aria-hidden="true" />
+                More Actions
+              </Button>
+            )}
           </div>
         </div>
       </header>
