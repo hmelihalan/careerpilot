@@ -17,6 +17,9 @@ const demoApplications = getMockApplicationsBySlugs([
   "peak-frontend-intern",
 ]);
 
+const recentApplicationLinkClassName =
+  "font-medium text-slate-700 transition-colors group-hover:text-indigo-700 group-hover:underline focus-visible:outline-none after:absolute after:inset-0 after:cursor-pointer after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-indigo-500";
+
 type RecentApplicationsProps =
   | {
       mode: "demo";
@@ -69,7 +72,7 @@ export function RecentApplications(props: RecentApplicationsProps) {
                 {demoApplications.map((application) => (
                   <tr
                     key={application.id}
-                    className="group text-slate-600 transition-colors hover:bg-indigo-50/30 focus-within:bg-indigo-50/30"
+                    className="group relative cursor-pointer text-slate-600 transition-colors hover:bg-indigo-50/30 focus-within:bg-indigo-50/30"
                   >
                     <td className="px-4 py-2.5 first:pl-4 sm:first:pl-6">
                       <div className="flex items-center gap-2.5">
@@ -84,7 +87,8 @@ export function RecentApplications(props: RecentApplicationsProps) {
                     <td className="px-4 py-2.5">
                       <Link
                         href={`${props.applicationsPath}/${application.slug}`}
-                        className="rounded font-medium text-slate-700 hover:text-indigo-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                        aria-label={`View ${application.role} application at ${application.company}`}
+                        className={recentApplicationLinkClassName}
                       >
                         {application.role}
                       </Link>
@@ -130,7 +134,7 @@ export function RecentApplications(props: RecentApplicationsProps) {
                 {props.applications.map((application) => (
                   <tr
                     key={application.id}
-                    className="group text-slate-600 transition-colors hover:bg-indigo-50/30 focus-within:bg-indigo-50/30"
+                    className="group relative cursor-pointer text-slate-600 transition-colors hover:bg-indigo-50/30 focus-within:bg-indigo-50/30"
                   >
                     <td className="px-4 py-2.5 first:pl-4 sm:first:pl-6">
                       <div className="flex items-center gap-2.5">
@@ -145,7 +149,8 @@ export function RecentApplications(props: RecentApplicationsProps) {
                     <td className="px-4 py-2.5">
                       <Link
                         href={`${props.applicationsPath}/${application.slug}`}
-                        className="rounded font-medium text-slate-700 hover:text-indigo-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                        aria-label={`View ${application.role} application at ${application.company}`}
+                        className={recentApplicationLinkClassName}
                       >
                         {application.role}
                       </Link>
