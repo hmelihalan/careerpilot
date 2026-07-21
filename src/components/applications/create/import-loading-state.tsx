@@ -5,6 +5,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { ImportApplicationMode } from "@/src/components/applications/create/import-application-step";
+import type { ApplicationImportMethod } from "@/src/types/application";
 
 const analysisSteps = [
   "Detecting company and role",
@@ -12,13 +14,23 @@ const analysisSteps = [
   "Identifying required skills",
 ] as const;
 
-export function ImportLoadingState() {
+type ImportLoadingStateProps = {
+  mode: ImportApplicationMode;
+  method: ApplicationImportMethod;
+};
+
+export function ImportLoadingState({ mode, method }: ImportLoadingStateProps) {
+  const isSimulation = mode === "simulation";
+  const importLabel = method === "url" ? "job URL" : "job description";
+
   return (
     <>
       <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 sm:px-6">
         <DialogTitle className="text-lg text-slate-950">Add Application</DialogTitle>
         <DialogDescription className="text-slate-500">
-          CareerPilot is preparing a reviewable draft.
+          {isSimulation
+            ? "CareerPilot is preparing a simulated review draft."
+            : "Automatic analysis is coming soon."}
         </DialogDescription>
       </DialogHeader>
       <div
@@ -31,10 +43,14 @@ export function ImportLoadingState() {
             <LoaderCircle className="size-5 animate-spin" aria-hidden="true" />
           </span>
           <h3 className="mt-4 text-base font-medium text-slate-950">
-            Analyzing job description…
+            {isSimulation
+              ? `Simulating ${importLabel} analysis…`
+              : "Analysis unavailable"}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
-            This typed preview uses local mock behavior only.
+            {isSimulation
+              ? "Simulated demo only. Local mock data is used and nothing is stored."
+              : "Enter details manually to add this application."}
           </p>
           <ul className="mt-6 space-y-2 text-left">
             {analysisSteps.map((step) => (

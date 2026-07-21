@@ -100,7 +100,7 @@ export function DashboardPageContent(props: DashboardPageContentProps) {
           id="dashboard-greeting"
           className="text-xl font-medium tracking-tight text-slate-950 sm:text-2xl"
         >
-          Good afternoon
+          Welcome back
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           Here is what is happening with your job search.

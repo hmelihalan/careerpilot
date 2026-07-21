@@ -18,9 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { EMPTY_APPLICATION, MOCK_EXTRACTED_APPLICATION, MOCK_IMPORT_ERROR_TOKEN } from "@/src/constants/application";
+import {
+  EMPTY_APPLICATION,
+  MOCK_EXTRACTED_APPLICATION,
+  MOCK_IMPORT_ERROR_TOKEN,
+} from "@/src/constants/application";
 import { DuplicateApplicationState } from "@/src/components/applications/create/duplicate-application-state";
-import { ImportApplicationStep } from "@/src/components/applications/create/import-application-step";
+import {
+  ImportApplicationStep,
+  type ImportApplicationMode,
+} from "@/src/components/applications/create/import-application-step";
 import { ImportErrorState } from "@/src/components/applications/create/import-error-state";
 import { ImportLoadingState } from "@/src/components/applications/create/import-loading-state";
 import { ReviewApplicationStep } from "@/src/components/applications/create/review-application-step";
@@ -102,6 +109,9 @@ export function AddApplicationDialog({
   const sessionRef = useRef(0);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const importMode: ImportApplicationMode = demoMode
+    ? "simulation"
+    : "authenticated";
 
   function clearTimers() {
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -162,6 +172,13 @@ export function AddApplicationDialog({
   }
 
   function handleAnalyze() {
+    if (!demoMode) {
+      setImportError(
+        "Automatic analysis is coming soon. Enter details manually to add this application.",
+      );
+      return;
+    }
+
     const input =
       importMethod === "description" ? descriptionInput : urlInput;
     const validationError = validateImportInput(importMethod, input);
@@ -323,6 +340,7 @@ export function AddApplicationDialog({
         <DialogContent className="grid h-[calc(100dvh-1rem)] max-h-[calc(100dvh-1rem)] max-w-[calc(100%-1rem)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-0 shadow-lg sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:max-w-4xl">
           {step === "import" ? (
             <ImportApplicationStep
+              mode={importMode}
               method={importMethod}
               description={descriptionInput}
               url={urlInput}
@@ -336,7 +354,9 @@ export function AddApplicationDialog({
             />
           ) : null}
 
-          {step === "loading" ? <ImportLoadingState /> : null}
+          {step === "loading" ? (
+            <ImportLoadingState mode={importMode} method={importMethod} />
+          ) : null}
 
           {step === "error" ? (
             <ImportErrorState
@@ -373,7 +393,13 @@ export function AddApplicationDialog({
             <>
               <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 sm:px-6">
                 <DialogTitle className="text-lg text-slate-950">
-                  {step === "saving" ? "Saving Application" : "Application Saved"}
+                  {step === "saving"
+                    ? demoMode
+                      ? "Simulating Application"
+                      : "Saving Application"
+                    : demoMode
+                      ? "Simulation Complete"
+                      : "Application Saved"}
                 </DialogTitle>
                 <DialogDescription className="text-slate-500">
                   {step === "saving"
@@ -381,7 +407,7 @@ export function AddApplicationDialog({
                       ? "Finishing your mock application draft."
                       : "Saving your application securely."
                     : demoMode
-                      ? "This preview does not persist data."
+                      ? "Simulation complete. Nothing was stored."
                       : "Your application is now available in CareerPilot."}
                 </DialogDescription>
               </DialogHeader>
@@ -400,16 +426,20 @@ export function AddApplicationDialog({
                   </span>
                   <p className="mt-4 text-base font-medium text-slate-950">
                     {step === "saving"
-                      ? "Saving application…"
-                      : savedStatus === "Wishlist"
-                        ? "Application saved to Wishlist."
-                        : "Application saved as Applied."}
+                      ? demoMode
+                        ? "Running application simulation…"
+                        : "Saving application…"
+                      : demoMode
+                        ? "Simulation complete."
+                        : savedStatus === "Wishlist"
+                          ? "Application saved to Wishlist."
+                          : "Application saved as Applied."}
                   </p>
                   <p className="mt-1 text-sm text-slate-500">
                     {step === "saving"
                       ? "Please wait a moment."
                       : demoMode
-                        ? "Demo application created locally. Changes are not stored."
+                        ? "Nothing was stored. This demo only simulates application creation."
                         : "Saved to your applications."}
                   </p>
                 </div>

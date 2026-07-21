@@ -1,4 +1,4 @@
-import Link from "next/link";
+
 import {
   BriefcaseBusiness,
   CalendarDays,
@@ -169,9 +169,12 @@ export function ApplicationOverview({
                   Technical Interview
                 </p>
               </div>
-              <Button size="sm" className="mt-3 w-full rounded-lg">
+              <Button size="sm" className="mt-3 w-full rounded-lg" disabled>
                 Prepare with AI
               </Button>
+              <p className="mt-2 text-center text-[11px] text-slate-500">
+                Demo only — AI preparation is not run.
+              </p>
             </CardContent>
           </Card>
 
@@ -197,11 +200,13 @@ export function ApplicationOverview({
                 variant="outline"
                 size="sm"
                 className="mt-3 w-full rounded-lg"
-                nativeButton={false}
-                render={<Link href="#" />}
+                disabled
               >
                 View Resume
               </Button>
+              <p className="mt-2 text-center text-[11px] text-slate-500">
+                Simulated preview — no resume file is attached.
+              </p>
             </CardContent>
           </Card>
         </aside>

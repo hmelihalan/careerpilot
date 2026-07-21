@@ -3,58 +3,19 @@
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BarChart3,
-  BriefcaseBusiness,
-  FileText,
-  LayoutDashboard,
-  Settings,
-  Sparkles,
-  type LucideIcon,
-} from "lucide-react";
+import { BriefcaseBusiness } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { AppUserDisplay } from "@/src/components/layout/dashboard-shell";
-import { appRoutes } from "@/src/constants/navigation";
+import {
+  appNavigation,
+  appRoutes,
+  isAppNavigationItemActive,
+} from "@/src/constants/navigation";
 import type { AppMode } from "@/src/types/navigation";
 
-type NavigationItem = {
-  name: string;
-  href?: string;
-  icon: LucideIcon;
-  preview?: boolean;
-};
 
-const authenticatedNavigation: readonly NavigationItem[] = [
-  { name: "Dashboard", href: appRoutes.authenticated.dashboard, icon: LayoutDashboard },
-  { name: "Applications", href: appRoutes.authenticated.applications, icon: BriefcaseBusiness },
-  { name: "Resumes", href: "/resumes", icon: FileText },
-  { name: "AI Studio", href: "/ai-studio", icon: Sparkles },
-  { name: "Analytics", href: "/analytics", icon: BarChart3 },
-  { name: "Settings", href: "/settings", icon: Settings },
-];
-
-const demoNavigation: readonly NavigationItem[] = [
-  { name: "Dashboard", href: appRoutes.demo.dashboard, icon: LayoutDashboard },
-  { name: "Applications", href: appRoutes.demo.applications, icon: BriefcaseBusiness },
-  { name: "Resumes", icon: FileText, preview: true },
-  { name: "AI Studio", icon: Sparkles, preview: true },
-  { name: "Analytics", icon: BarChart3, preview: true },
-  { name: "Settings", icon: Settings, preview: true },
-];
-
-function isNavigationItemActive(
-  pathname: string,
-  href: string,
-  dashboardHref: string,
-): boolean {
-  if (href === dashboardHref) {
-    return pathname === href;
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 type AppSidebarProps = {
   mode: AppMode;
@@ -63,7 +24,7 @@ type AppSidebarProps = {
 
 export function AppSidebar({ mode, user }: AppSidebarProps) {
   const pathname = usePathname();
-  const navigation = mode === "demo" ? demoNavigation : authenticatedNavigation;
+  const navigation = appNavigation[mode];
   const dashboardHref = appRoutes[mode].dashboard;
 
   return (
@@ -112,7 +73,7 @@ export function AppSidebar({ mode, user }: AppSidebarProps) {
               );
             }
 
-            const isActive = isNavigationItemActive(
+            const isActive = isAppNavigationItemActive(
               pathname,
               item.href,
               dashboardHref,
@@ -144,21 +105,31 @@ export function AppSidebar({ mode, user }: AppSidebarProps) {
             <h2 id="weekly-goal-title" className="text-xs font-medium text-slate-900">
               Weekly Goal
             </h2>
-            <span className="text-xs font-medium text-indigo-600">4/5</span>
+            {mode === "demo" ? (
+              <span className="text-xs font-medium text-indigo-600">Demo 4/5</span>
+            ) : null}
           </div>
-          <p className="mt-1 text-[11px] leading-4 text-slate-500">
-            One more application to reach your goal.
-          </p>
-          <div
-            className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-200"
-            role="progressbar"
-            aria-label="Weekly application goal"
-            aria-valuemin={0}
-            aria-valuemax={5}
-            aria-valuenow={4}
-          >
-            <div className="h-full w-4/5 rounded-full bg-indigo-600" />
-          </div>
+          {mode === "demo" ? (
+            <>
+              <p className="mt-1 text-[11px] leading-4 text-slate-500">
+                Simulated progress: one more application to reach the sample goal.
+              </p>
+              <div
+                className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-200"
+                role="progressbar"
+                aria-label="Simulated weekly application goal"
+                aria-valuemin={0}
+                aria-valuemax={5}
+                aria-valuenow={4}
+              >
+                <div className="h-full w-4/5 rounded-full bg-indigo-600" />
+              </div>
+            </>
+          ) : (
+            <p className="mt-1 text-[11px] leading-4 text-slate-500">
+              Weekly goal not set
+            </p>
+          )}
         </section>
 
         {mode === "demo" ? (

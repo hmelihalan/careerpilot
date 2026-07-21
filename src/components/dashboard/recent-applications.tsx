@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { BriefcaseBusiness, MoreHorizontal } from "lucide-react";
+import { BriefcaseBusiness } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { applicationStatusBadgeStyles as statusStyles } from "@/src/constants/application-status";
@@ -51,7 +51,7 @@ export function RecentApplications(props: RecentApplicationsProps) {
       <CardContent className={demoMode ? "px-0" : undefined}>
         {demoMode ? (
           <div className="scrollbar-thin overflow-x-auto">
-            <table className="w-full min-w-190 text-left text-xs">
+            <table className="w-full min-w-170 text-left text-xs">
               <thead>
                 <tr className="border-y bg-slate-50/80 text-[11px] font-medium uppercase tracking-wide text-slate-500">
                   <th scope="col" className="px-4 py-2 first:pl-4 sm:first:pl-6">
@@ -60,9 +60,8 @@ export function RecentApplications(props: RecentApplicationsProps) {
                   <th scope="col" className="px-4 py-2">Role</th>
                   <th scope="col" className="px-4 py-2">Status</th>
                   <th scope="col" className="px-4 py-2">Match</th>
-                  <th scope="col" className="px-4 py-2">Date</th>
-                  <th scope="col" className="px-4 py-2 text-right last:pr-4 sm:last:pr-6">
-                    Actions
+                  <th scope="col" className="px-4 py-2 last:pr-4 sm:last:pr-6">
+                    Date
                   </th>
                 </tr>
               </thead>
@@ -103,18 +102,8 @@ export function RecentApplications(props: RecentApplicationsProps) {
                     <td className="px-4 py-2.5 font-medium text-slate-900">
                       {application.matchScore}%
                     </td>
-                    <td className="px-4 py-2.5 text-slate-500">
+                    <td className="px-4 py-2.5 text-slate-500 last:pr-4 sm:last:pr-6">
                       {application.appliedDate}
-                    </td>
-                    <td className="px-4 py-2.5 text-right last:pr-4 sm:last:pr-6">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Actions for ${application.role} at ${application.company}`}
-                      >
-                        <MoreHorizontal aria-hidden="true" />
-                      </Button>
                     </td>
                   </tr>
                 ))}

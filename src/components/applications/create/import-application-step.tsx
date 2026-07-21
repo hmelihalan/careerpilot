@@ -14,7 +14,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import type { ApplicationImportMethod } from "@/src/types/application";
 
+export type ImportApplicationMode = "authenticated" | "simulation";
+
 type ImportApplicationStepProps = {
+  mode: ImportApplicationMode;
   method: ApplicationImportMethod;
   description: string;
   url: string;
@@ -28,6 +31,7 @@ type ImportApplicationStepProps = {
 };
 
 export function ImportApplicationStep({
+  mode,
   method,
   description,
   url,
@@ -39,9 +43,11 @@ export function ImportApplicationStep({
   onManualEntry,
   onCancel,
 }: ImportApplicationStepProps) {
+  const isSimulation = mode === "simulation";
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onAnalyze();
+    if (isSimulation) onAnalyze();
   }
 
   const errorId = `application-import-${method}-error`;
@@ -52,8 +58,9 @@ export function ImportApplicationStep({
       <DialogHeader className="border-b border-slate-200 px-5 py-4 pr-12 sm:px-6">
         <DialogTitle className="text-lg text-slate-950">Add Application</DialogTitle>
         <DialogDescription className="max-w-2xl leading-5 text-slate-500">
-          Paste a job description or job URL and CareerPilot will extract the
-          important details for you.
+          {isSimulation
+            ? "Try a simulated local import using a job description or URL."
+            : "Automatic analysis for job descriptions and URLs is coming soon. Enter details manually to add an application now."}
         </DialogDescription>
       </DialogHeader>
 
@@ -96,7 +103,15 @@ export function ImportApplicationStep({
 
           {method === "description" ? (
             <div className="space-y-2">
-              <Label htmlFor="job-description-import">Job Description</Label>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="job-description-import">Job Description</Label>
+                {isSimulation ? (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700">
+                    <Sparkles className="size-3" aria-hidden="true" />
+                    Simulated demo
+                  </span>
+                ) : null}
+              </div>
               <Textarea
                 id="job-description-import"
                 name="jobDescription"
@@ -110,7 +125,9 @@ export function ImportApplicationStep({
                 className="min-h-60 resize-y border-slate-200 bg-white leading-6"
               />
               <p id={helpId} className="text-xs leading-5 text-slate-500">
-                We’ll detect the company, role, location, skills, and work type.
+                {isSimulation
+                  ? "This demo uses local mock data only; no analysis is performed and nothing is stored."
+                  : "Automatic description analysis is coming soon. Use Enter details manually below to save an application."}
               </p>
               {error ? (
                 <p id={errorId} className="text-xs font-medium text-red-600">
@@ -122,10 +139,12 @@ export function ImportApplicationStep({
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="job-url-import">Job URL</Label>
-                <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700">
-                  <Sparkles className="size-3" aria-hidden="true" />
-                  Mock preview
-                </span>
+                {isSimulation ? (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700">
+                    <Sparkles className="size-3" aria-hidden="true" />
+                    Simulated demo
+                  </span>
+                ) : null}
               </div>
               <Input
                 id="job-url-import"
@@ -140,9 +159,9 @@ export function ImportApplicationStep({
                 className="h-10 border-slate-200 bg-white"
               />
               <p id={helpId} className="text-xs leading-5 text-slate-500">
-                URL import support will be added for supported job platforms.
-                For now, the URL will be saved as a reference and mock details
-                will be shown for preview.
+                {isSimulation
+                  ? "This demo uses local mock data only; no URL analysis is performed and nothing is stored."
+                  : "Automatic URL analysis is coming soon. Use Enter details manually below to save an application."}
               </p>
               {error ? (
                 <p id={errorId} className="text-xs font-medium text-red-600">
@@ -168,9 +187,9 @@ export function ImportApplicationStep({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit">
+        <Button type="submit" disabled={!isSimulation}>
           <Sparkles data-icon="inline-start" aria-hidden="true" />
-          Analyze Job
+          {isSimulation ? "Simulate Analysis" : "Analysis coming soon"}
         </Button>
       </DialogFooter>
     </form>

@@ -1,69 +1,48 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
-import { Bell, Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { BriefcaseBusiness, Plus } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useAddApplicationDialog } from "@/src/components/applications/create/add-application-dialog";
+import type { AppUserDisplay } from "@/src/components/layout/dashboard-shell";
+import { MobileAppNavigation } from "@/src/components/layout/mobile-app-navigation";
+import { appRoutes } from "@/src/constants/navigation";
 import type { AppMode } from "@/src/types/navigation";
 
 type AppHeaderProps = {
   mode: AppMode;
+  user: AppUserDisplay;
 };
 
-export function AppHeader({ mode }: AppHeaderProps) {
+export function AppHeader({ mode, user }: AppHeaderProps) {
   const { openAddApplicationDialog } = useAddApplicationDialog();
 
   return (
     <header className="sticky top-0 z-20 border-b bg-white">
-      <div className="mx-auto flex h-14 max-w-360 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
-        <div className="relative w-full max-w-xs">
-          <Search
-            className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-slate-400"
-            aria-hidden="true"
-          />
-          <Input
-            type="search"
-            aria-label="Search applications"
-            placeholder="Search applications..."
-            className="h-8 rounded-lg border-slate-200 bg-slate-50 pl-8 text-sm shadow-none focus-visible:bg-white"
-          />
+      <div className="mx-auto flex h-14 max-w-360 items-center gap-2 px-3 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-1.5 md:hidden">
+          <MobileAppNavigation mode={mode} user={user} />
+          <Link
+            href={appRoutes[mode].dashboard}
+            aria-label="Go to dashboard"
+            className="flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+          >
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white">
+              <BriefcaseBusiness className="size-3.5" aria-hidden="true" />
+            </span>
+            <span className="truncate text-sm font-medium tracking-tight text-slate-950">
+              CareerPilot
+            </span>
+          </Link>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {mode === "demo" ? (
             <span className="hidden rounded-md border border-indigo-100 bg-indigo-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-700 sm:inline-flex">
               Demo Mode
             </span>
           ) : null}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            aria-label="View notifications"
-            className="rounded-lg text-slate-600"
-          >
-            <Bell className="size-4" aria-hidden="true" />
-          </Button>
-          <div className="hidden sm:block">
-            {mode === "authenticated" ? (
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "size-8",
-                  },
-                }}
-              />
-            ) : (
-              <Avatar className="size-8">
-                <AvatarFallback className="bg-indigo-100 text-xs font-medium text-indigo-700">
-                  MK
-                </AvatarFallback>
-              </Avatar>
-            )}
-          </div>
           <Button
             type="button"
             size="sm"

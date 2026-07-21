@@ -71,23 +71,26 @@ export function CoverLetterPanel() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" className="rounded-lg">
+          <Button variant="outline" size="sm" className="rounded-lg" disabled>
             <Pencil data-icon="inline-start" aria-hidden="true" />
             Edit
           </Button>
-          <Button variant="outline" size="sm" className="rounded-lg">
+          <Button variant="outline" size="sm" className="rounded-lg" disabled>
             <Copy data-icon="inline-start" aria-hidden="true" />
             Copy
           </Button>
-          <Button variant="outline" size="sm" className="rounded-lg">
+          <Button variant="outline" size="sm" className="rounded-lg" disabled>
             <RefreshCw data-icon="inline-start" aria-hidden="true" />
             Regenerate
           </Button>
-          <Button size="sm" className="rounded-lg sm:ml-auto">
+          <Button size="sm" className="rounded-lg sm:ml-auto" disabled>
             <Save data-icon="inline-start" aria-hidden="true" />
             Save
           </Button>
         </div>
+        <p className="text-[11px] text-slate-500">
+          Simulated preview — editing, copying, regeneration, and saving are demo only.
+        </p>
       </CardContent>
     </Card>
   );

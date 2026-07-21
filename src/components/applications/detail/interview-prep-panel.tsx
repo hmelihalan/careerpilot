@@ -78,10 +78,15 @@ export function InterviewPrepPanel({ role, company }: InterviewPrepPanelProps) {
             Practice questions tailored to the {role} role at {company}.
           </p>
         </div>
-        <Button size="sm" className="w-fit rounded-lg">
-          <Sparkles data-icon="inline-start" aria-hidden="true" />
-          Generate More Questions
-        </Button>
+        <div className="space-y-1.5 sm:text-right">
+          <Button size="sm" className="w-fit rounded-lg" disabled>
+            <Sparkles data-icon="inline-start" aria-hidden="true" />
+            Generate More Questions
+          </Button>
+          <p className="text-[11px] text-slate-500">
+            Simulated preview — generation and guidance are demo only.
+          </p>
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-5">
@@ -125,6 +130,7 @@ export function InterviewPrepPanel({ role, company }: InterviewPrepPanelProps) {
                     variant="ghost"
                     size="sm"
                     className="mt-auto w-fit rounded-lg px-0 pt-3 text-indigo-600 hover:bg-transparent hover:text-indigo-700"
+                    disabled
                   >
                     Show Guidance
                     <ChevronDown data-icon="inline-end" aria-hidden="true" />

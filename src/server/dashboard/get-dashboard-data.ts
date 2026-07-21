@@ -1,7 +1,6 @@
 import "server-only";
 
-import { ApplicationStatus as PrismaApplicationStatus } from "@/src/generated/prisma/enums";
-import type { ApplicationStatus } from "@/src/generated/prisma/enums";
+import { calculateDashboardMetrics } from "@/src/lib/dashboard/dashboard-metrics";
 import { prisma } from "@/src/lib/prisma";
 import { prismaStatusToUi } from "@/src/server/applications/application-mappings";
 import { requireUser } from "@/src/server/auth/require-user";
@@ -49,47 +48,15 @@ export async function getDashboardDataForCurrentUser(): Promise<DashboardViewMod
     }),
   ]);
 
-  const countsByStatus: Record<ApplicationStatus, number> = {
-    [PrismaApplicationStatus.WISHLIST]: 0,
-    [PrismaApplicationStatus.APPLIED]: 0,
-    [PrismaApplicationStatus.ASSESSMENT]: 0,
-    [PrismaApplicationStatus.INTERVIEW]: 0,
-    [PrismaApplicationStatus.OFFER]: 0,
-    [PrismaApplicationStatus.REJECTED]: 0,
-  };
-
-  statusGroups.forEach((group) => {
-    countsByStatus[group.status] = group._count._all;
-  });
-
-  const total = Object.values(countsByStatus).reduce(
-    (sum, count) => sum + count,
-    0,
+  const metrics = calculateDashboardMetrics(
+    statusGroups.map((group) => ({
+      status: group.status,
+      count: group._count._all,
+    })),
   );
-  const responded =
-    countsByStatus[PrismaApplicationStatus.ASSESSMENT] +
-    countsByStatus[PrismaApplicationStatus.INTERVIEW] +
-    countsByStatus[PrismaApplicationStatus.OFFER] +
-    countsByStatus[PrismaApplicationStatus.REJECTED];
-  // MVP response rate: responded (Assessment, Interview, Offer, Rejected)
-  // divided by eligible (Applied plus responded). Wishlist is excluded.
-  const eligible =
-    countsByStatus[PrismaApplicationStatus.APPLIED] + responded;
-  const responseRate =
-    eligible === 0 ? 0 : Math.round((responded / eligible) * 100);
 
   return {
-    statusCounts: {
-      total,
-      wishlist: countsByStatus[PrismaApplicationStatus.WISHLIST],
-      applied: countsByStatus[PrismaApplicationStatus.APPLIED],
-      assessment: countsByStatus[PrismaApplicationStatus.ASSESSMENT],
-      interview: countsByStatus[PrismaApplicationStatus.INTERVIEW],
-      offer: countsByStatus[PrismaApplicationStatus.OFFER],
-      rejected: countsByStatus[PrismaApplicationStatus.REJECTED],
-    },
-    responseRate,
-    eligibleApplicationCount: eligible,
+    ...metrics,
     recentApplications: recentRecords.map((application) => ({
       id: application.id,
       slug: application.slug,

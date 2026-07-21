@@ -17,7 +17,6 @@ import { DemoModeNotice } from "@/src/components/shared/demo-mode-notice";
 import { appRoutes } from "@/src/constants/navigation";
 import { mockApplications } from "@/src/constants/mock-applications";
 import type { ApplicationListItem } from "@/src/types/application";
-import type { AppMode } from "@/src/types/navigation";
 
 function countActiveFilters(filters: ApplicationsFilters): number {
   return [
@@ -28,15 +27,20 @@ function countActiveFilters(filters: ApplicationsFilters): number {
   ].filter(Boolean).length;
 }
 
-type ApplicationsPageClientProps = {
-  applications?: readonly ApplicationListItem[];
-  mode?: AppMode;
-};
+type ApplicationsPageClientProps =
+  | {
+      mode?: "authenticated";
+      applications: readonly ApplicationListItem[];
+    }
+  | {
+      mode: "demo";
+      applications?: never;
+    };
 
-export function ApplicationsPageClient({
-  applications = mockApplications,
-  mode = "authenticated",
-}: ApplicationsPageClientProps) {
+export function ApplicationsPageClient(props: ApplicationsPageClientProps) {
+  const mode = props.mode ?? "authenticated";
+  const applications =
+    props.mode === "demo" ? mockApplications : props.applications;
   const applicationsPath = appRoutes[mode].applications;
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<ApplicationsView>("board");
@@ -95,6 +99,7 @@ export function ApplicationsPageClient({
   const isFiltered = Boolean(normalizedSearchQuery) || activeFilterCount > 0;
 
   function clearFilters() {
+    setSearchQuery("");
     setFilters(EMPTY_APPLICATION_FILTERS);
   }
 

@@ -125,16 +125,30 @@ export function ResumeMatchPanel({
         </section>
 
         <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row">
-          <Button type="button" variant="outline" size="sm" className="rounded-lg border-slate-200">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="rounded-lg border-slate-200"
+            disabled
+          >
             <FileText data-icon="inline-start" aria-hidden="true" />
             Review Resume
           </Button>
-          <Button type="button" size="sm" className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+          <Button
+            type="button"
+            size="sm"
+            className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
+            disabled
+          >
             <Sparkles data-icon="inline-start" aria-hidden="true" />
             Generate Improved Suggestions
             <ArrowUpRight data-icon="inline-end" aria-hidden="true" />
           </Button>
         </div>
+        <p className="mt-2 text-[11px] text-slate-500">
+          Simulated preview — resume review and AI suggestions are demo only.
+        </p>
       </CardContent>
     </Card>
   );

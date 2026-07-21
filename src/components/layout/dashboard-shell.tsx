@@ -31,7 +31,7 @@ export function DashboardShell(props: DashboardShellProps) {
       <div className="min-h-screen bg-slate-50">
         <AppSidebar mode={mode} user={user} />
         <div className="min-w-0 md:pl-56">
-          <AppHeader mode={mode} />
+          <AppHeader mode={mode} user={user} />
           <main className="mx-auto w-full max-w-360 px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
             {props.children}
           </main>

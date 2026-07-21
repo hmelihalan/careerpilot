@@ -13,12 +13,15 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { applicationStatusBadgeStyles as statusStyles } from "@/src/constants/application-status";
+import type { ApplicationStatus } from "@/src/types/application";
 
 export type ApplicationHeaderData = {
   initials: string;
   role: string;
   company: string;
-  status: string;
+  status: ApplicationStatus;
   match?: number;
   location: string;
   workMode: string;
@@ -71,7 +74,12 @@ export function ApplicationDetailHeader({
                 <h1 className="text-xl font-medium tracking-tight text-slate-950 sm:text-2xl">
                   {application.role}
                 </h1>
-                <Badge className="rounded-md bg-violet-50 px-2 font-medium text-violet-700">
+                <Badge
+                  className={cn(
+                    "rounded-md px-2 font-medium",
+                    statusStyles[application.status],
+                  )}
+                >
                   {application.status}
                 </Badge>
                 {application.match !== undefined ? (
@@ -101,53 +109,64 @@ export function ApplicationDetailHeader({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {editControl ?? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-lg"
-                disabled
-                title={
-                  demoMode
-                    ? "Editing is unavailable in demo mode"
-                    : "Editing is coming next"
-                }
-              >
-                <Pencil data-icon="inline-start" aria-hidden="true" />
-                Edit
-              </Button>
-            )}
-            {statusControl ?? (
-              <Button
-                type="button"
-                size="sm"
-                className="rounded-lg"
-                disabled
-                title={demoMode ? "Status changes are unavailable in demo mode" : "Status changes are coming next"}
-              >
-                Change Status
-                <ChevronDown data-icon="inline-end" aria-hidden="true" />
-              </Button>
-            )}
-            {deleteControl ?? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="rounded-lg"
-                disabled
-                title={
-                  demoMode
-                    ? "Actions are unavailable in demo mode"
-                    : "More actions are coming next"
-                }
-              >
-                <Ellipsis data-icon="inline-start" aria-hidden="true" />
-                More Actions
-              </Button>
-            )}
+          <div className="flex flex-col items-start gap-2 lg:items-end">
+            <div className="flex flex-wrap items-center gap-2">
+              {editControl ?? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg"
+                  disabled
+                  title={
+                    demoMode
+                      ? "Editing is unavailable in demo mode"
+                      : "Editing is coming next"
+                  }
+                >
+                  <Pencil data-icon="inline-start" aria-hidden="true" />
+                  Edit
+                </Button>
+              )}
+              {statusControl ?? (
+                <Button
+                  type="button"
+                  size="sm"
+                  className="rounded-lg"
+                  disabled
+                  title={
+                    demoMode
+                      ? "Status changes are unavailable in demo mode"
+                      : "Status changes are coming next"
+                  }
+                >
+                  Change Status
+                  <ChevronDown data-icon="inline-end" aria-hidden="true" />
+                </Button>
+              )}
+              {deleteControl ?? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-lg"
+                  disabled
+                  title={
+                    demoMode
+                      ? "Actions are unavailable in demo mode"
+                      : "More actions are coming next"
+                  }
+                >
+                  <Ellipsis data-icon="inline-start" aria-hidden="true" />
+                  More Actions
+                </Button>
+              )}
+            </div>
+            {demoMode ? (
+              <p className="text-xs text-slate-500">
+                Demo only — editing, status changes, and other actions are unavailable.
+              </p>
+            ) : null}
           </div>
         </div>
       </header>

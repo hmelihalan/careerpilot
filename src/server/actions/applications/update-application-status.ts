@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { getApplicationStatusTransition } from "@/src/lib/applications/status-transition";
 import { prisma } from "@/src/lib/prisma";
 import { requireUser } from "@/src/server/auth/require-user";
 import { updateApplicationStatusSchema } from "@/src/server/validations/application";
@@ -41,27 +42,32 @@ export async function updateApplicationStatus(
             userId,
             slug,
           },
-          select: { id: true, status: true },
+          select: { id: true, status: true, appliedAt: true },
         });
 
         if (!application) {
           return { outcome: "not-found" };
         }
 
-        if (application.status === targetStatus) {
+        const transition = getApplicationStatusTransition({
+          currentStatus: application.status,
+          targetStatus,
+          appliedAt: application.appliedAt,
+        });
+
+        if (!transition.changed) {
           return { outcome: "no-change", status: application.status };
         }
 
         await transaction.application.update({
           where: { id: application.id },
-          data: { status: targetStatus },
+          data: transition.applicationData,
         });
 
         await transaction.applicationStatusHistory.create({
           data: {
             applicationId: application.id,
-            fromStatus: application.status,
-            toStatus: targetStatus,
+            ...transition.historyData,
           },
         });
 

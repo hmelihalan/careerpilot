@@ -1,10 +1,10 @@
 import "server-only";
 
-import { prisma } from "@/src/lib/prisma";
 import {
-  normalizeApplicationText,
-  normalizeApplicationUrl,
-} from "@/src/server/applications/normalize-application";
+  findDuplicateByFields,
+  findDuplicateByUrl,
+} from "@/src/lib/applications/duplicate-application";
+import { prisma } from "@/src/lib/prisma";
 import type {
   DuplicateApplicationReason,
   DuplicateApplicationSummary,
@@ -34,7 +34,6 @@ export async function findDuplicateApplication(
   const excludedId = options.excludeApplicationId;
 
   if (data.applicationUrl) {
-    const normalizedSubmittedUrl = normalizeApplicationUrl(data.applicationUrl);
     const urlCandidates = await prisma.application.findMany({
       where: {
         userId,
@@ -50,12 +49,7 @@ export async function findDuplicateApplication(
         applicationUrl: true,
       },
     });
-    const duplicateByUrl = urlCandidates.find(
-      (candidate) =>
-        normalizedSubmittedUrl !== null &&
-        candidate.applicationUrl !== null &&
-        normalizeApplicationUrl(candidate.applicationUrl) === normalizedSubmittedUrl,
-    );
+    const duplicateByUrl = findDuplicateByUrl(data, urlCandidates);
 
     if (duplicateByUrl) {
       return {
@@ -71,11 +65,10 @@ export async function findDuplicateApplication(
     }
   }
 
-  if (!data.location) return null;
+  if (!data.company.trim() || !data.role.trim() || !data.location?.trim()) {
+    return null;
+  }
 
-  const normalizedCompany = normalizeApplicationText(data.company);
-  const normalizedRole = normalizeApplicationText(data.role);
-  const normalizedLocation = normalizeApplicationText(data.location);
   const fieldCandidates = await prisma.application.findMany({
     where: {
       userId,
@@ -90,13 +83,7 @@ export async function findDuplicateApplication(
       location: true,
     },
   });
-  const duplicateByFields = fieldCandidates.find(
-    (candidate) =>
-      candidate.location !== null &&
-      normalizeApplicationText(candidate.company) === normalizedCompany &&
-      normalizeApplicationText(candidate.role) === normalizedRole &&
-      normalizeApplicationText(candidate.location) === normalizedLocation,
-  );
+  const duplicateByFields = findDuplicateByFields(data, fieldCandidates);
 
   if (!duplicateByFields) return null;
 

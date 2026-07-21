@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, MoreHorizontal, SearchX } from "lucide-react";
+import { MapPin, SearchX } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ export function ApplicationsList({
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-205 text-left text-xs">
+        <table className="w-full min-w-180 text-left text-xs">
           <thead>
             <tr className="border-b bg-slate-50/80 text-[11px] font-medium uppercase tracking-wide text-slate-500">
               <th scope="col" className="px-4 py-2.5">Company</th>
@@ -52,7 +52,6 @@ export function ApplicationsList({
               <th scope="col" className="px-4 py-2.5">Location / Work Mode</th>
               <th scope="col" className="px-4 py-2.5">Match</th>
               <th scope="col" className="px-4 py-2.5">Updated</th>
-              <th scope="col" className="px-4 py-2.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -98,16 +97,6 @@ export function ApplicationsList({
                   {application.matchScore === null ? "—" : `${application.matchScore}%`}
                 </td>
                 <td className="px-4 py-3 text-slate-500">{application.updatedAt}</td>
-                <td className="px-4 py-3 text-right">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Actions for ${application.role} at ${application.company}`}
-                  >
-                    <MoreHorizontal aria-hidden="true" />
-                  </Button>
-                </td>
               </tr>
             ))}
           </tbody>
@@ -116,7 +105,7 @@ export function ApplicationsList({
 
       <div className="divide-y divide-slate-100 md:hidden">
         {applications.map((application) => (
-          <article key={application.id} className="flex items-start gap-2 p-3">
+          <article key={application.id} className="p-3">
             <Link
               href={`${applicationsPath}/${application.slug}`}
               className="group min-w-0 flex-1 rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
@@ -152,14 +141,6 @@ export function ApplicationsList({
                 </div>
               </div>
             </Link>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Actions for ${application.role} at ${application.company}`}
-            >
-              <MoreHorizontal aria-hidden="true" />
-            </Button>
           </article>
         ))}
       </div>

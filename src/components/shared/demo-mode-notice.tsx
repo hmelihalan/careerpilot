@@ -11,7 +11,7 @@ export function DemoModeNotice() {
         Demo Mode
       </span>
       <span className="text-indigo-700">
-        This is a read-only product demo using sample data.
+        Interactions are simulated with sample data, and nothing is stored.
       </span>
     </aside>
   );

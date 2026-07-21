@@ -58,7 +58,9 @@ export function ApplicationNotes({
           <div>
             <CardTitle className="text-slate-950">Application Notes</CardTitle>
             <p className="mt-0.5 text-xs text-slate-500">
-              Keep interview details in one place.
+              {readOnly
+                ? "Saved application notes are read-only."
+                : "Simulated preview — sample notes cannot be changed."}
             </p>
           </div>
         </div>
@@ -75,18 +77,17 @@ export function ApplicationNotes({
             rows={3}
             placeholder={
               readOnly
-                ? "Note creation is coming next."
-                : "Add a note about this application..."
+                ? "Note creation is not available."
+                : "Demo only — notes are not stored."
             }
-            disabled={readOnly}
+            disabled
             className="mt-2 block w-full resize-y rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-5 text-slate-900 shadow-none outline-none placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 disabled:cursor-not-allowed disabled:bg-slate-100"
           />
           <div className="mt-2 flex justify-end">
             <Button
               type="button"
               size="sm"
-              disabled={readOnly}
-              title={readOnly ? "Note creation is coming next" : undefined}
+              disabled
               className="rounded-lg bg-indigo-600 text-white hover:bg-indigo-700"
             >
               Save Note
@@ -120,9 +121,8 @@ export function ApplicationNotes({
                           type="button"
                           variant="ghost"
                           size="icon-xs"
-                          disabled={readOnly}
+                          disabled
                           aria-label={`Edit note from ${note.date}`}
-                          title={readOnly ? "Note editing is coming next" : "Edit note"}
                           className="text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                         >
                           <Pencil aria-hidden="true" />
@@ -131,9 +131,8 @@ export function ApplicationNotes({
                           type="button"
                           variant="ghost"
                           size="icon-xs"
-                          disabled={readOnly}
+                          disabled
                           aria-label={`Delete note from ${note.date}`}
-                          title={readOnly ? "Note deletion is coming next" : "Delete note"}
                           className="text-slate-400 hover:bg-red-50 hover:text-red-600"
                         >
                           <Trash2 aria-hidden="true" />
