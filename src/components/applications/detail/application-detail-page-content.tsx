@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActivityTimeline } from "@/src/components/applications/detail/activity-timeline";
+import { ApplicationEditDialog } from "@/src/components/applications/detail/application-edit-dialog";
 import type { ApplicationHeaderData } from "@/src/components/applications/detail/application-detail-header";
 import { ApplicationDetailHeader } from "@/src/components/applications/detail/application-detail-header";
 import { ApplicationStatusControl } from "@/src/components/applications/detail/application-status-control";
@@ -70,6 +71,7 @@ export function ApplicationDetailPageContent(
 ) {
   let applicationsPath: string;
   let demoMode: boolean;
+  let editControl: ReactNode;
   let headerApplication: ApplicationHeaderData;
   let statusControl: ReactNode;
   let tabs: readonly ApplicationDetailTab[];
@@ -242,6 +244,12 @@ export function ApplicationDetailPageContent(
         content: <ActivityTimeline history={application.statusHistory} />,
       },
     ];
+    editControl = (
+      <ApplicationEditDialog
+        slug={application.slug}
+        initialValues={application.editValues}
+      />
+    );
     statusControl = (
       <ApplicationStatusControl
         slug={application.slug}
@@ -258,6 +266,7 @@ export function ApplicationDetailPageContent(
         applicationsPath={applicationsPath}
         demoMode={demoMode}
         application={headerApplication}
+        editControl={editControl}
         statusControl={statusControl}
       />
       <Suspense

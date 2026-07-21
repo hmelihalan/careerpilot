@@ -18,17 +18,23 @@ import {
   WORK_MODE_OPTIONS,
 } from "@/src/constants/application";
 import type {
-  ApplicationFieldErrors,
-  ApplicationFormData,
+  ApplicationCoreFormData,
+  ApplicationCreationStatus,
 } from "@/src/types/application";
 
 type ApplicationFormFieldsProps = {
-  application: ApplicationFormData;
-  errors: ApplicationFieldErrors;
-  onChange: <Field extends keyof ApplicationFormData>(
-    field: Field,
-    value: ApplicationFormData[Field],
+  application: ApplicationCoreFormData;
+  errors: Partial<Record<keyof ApplicationCoreFormData, string>>;
+  onChange: (
+    field: keyof ApplicationCoreFormData,
+    value: string | string[],
   ) => void;
+  employmentTypeOptions?: readonly string[];
+  initialStatus?: {
+    value: ApplicationCreationStatus;
+    error?: string;
+    onChange: (value: ApplicationCreationStatus) => void;
+  };
 };
 
 type TextFieldProps = {
@@ -98,6 +104,8 @@ export function ApplicationFormFields({
   application,
   errors,
   onChange,
+  employmentTypeOptions = EMPLOYMENT_TYPE_OPTIONS,
+  initialStatus,
 }: ApplicationFormFieldsProps) {
   const [newSkill, setNewSkill] = useState("");
 
@@ -206,7 +214,7 @@ export function ApplicationFormFields({
                 <SelectValue placeholder="Select employment type" />
               </SelectTrigger>
               <SelectContent>
-                {EMPLOYMENT_TYPE_OPTIONS.map((option) => (
+                {employmentTypeOptions.map((option) => (
                   <SelectItem key={option} value={option}>
                     {option}
                   </SelectItem>
@@ -326,35 +334,49 @@ export function ApplicationFormFields({
         ) : null}
       </FormSection>
 
-      <FormSection title="Tracking">
-        <div className="max-w-xs space-y-1.5">
-          <Label htmlFor="application-status" className="text-xs text-slate-700">
-            Initial Status
-          </Label>
-          <Select
-            value={application.status}
-            onValueChange={(value) => {
-              if (value === "Wishlist" || value === "Applied") {
-                onChange("status", value);
-              }
-            }}
-          >
-            <SelectTrigger id="application-status" className="h-9 w-full border-slate-200 bg-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Wishlist">Wishlist</SelectItem>
-              <SelectItem value="Applied">Applied</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.status ? (
-            <p className="text-xs font-medium text-red-600">{errors.status}</p>
-          ) : null}
-          <p className="text-xs leading-5 text-slate-500">
-            New applications can start in Wishlist or Applied.
-          </p>
-        </div>
-      </FormSection>
+      {initialStatus ? (
+        <FormSection title="Tracking">
+          <div className="max-w-xs space-y-1.5">
+            <Label htmlFor="application-status" className="text-xs text-slate-700">
+              Initial Status
+            </Label>
+            <Select
+              value={initialStatus.value}
+              onValueChange={(value) => {
+                if (value === "Wishlist" || value === "Applied") {
+                  initialStatus.onChange(value);
+                }
+              }}
+            >
+              <SelectTrigger
+                id="application-status"
+                aria-invalid={Boolean(initialStatus.error)}
+                aria-describedby={
+                  initialStatus.error ? "application-status-error" : undefined
+                }
+                className="h-9 w-full border-slate-200 bg-white"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Wishlist">Wishlist</SelectItem>
+                <SelectItem value="Applied">Applied</SelectItem>
+              </SelectContent>
+            </Select>
+            {initialStatus.error ? (
+              <p
+                id="application-status-error"
+                className="text-xs font-medium text-red-600"
+              >
+                {initialStatus.error}
+              </p>
+            ) : null}
+            <p className="text-xs leading-5 text-slate-500">
+              New applications can start in Wishlist or Applied.
+            </p>
+          </div>
+        </FormSection>
+      ) : null}
     </div>
   );
 }

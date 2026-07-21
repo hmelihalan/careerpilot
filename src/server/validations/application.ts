@@ -27,19 +27,48 @@ const optionalUrl = z
   }, "Enter a valid URL beginning with http:// or https://.")
   .transform((value) => (value ? value : undefined));
 
-const optionalDate = z
-  .string()
-  .trim()
-  .refine(
-    (value) =>
-      !value ||
-      (/^\d{4}-\d{2}-\d{2}$/.test(value) &&
-        !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`))),
-    "Enter a valid deadline.",
-  )
-  .transform((value) => (value ? value : undefined));
+const POSTGRES_INTEGER_MAX = 2_147_483_647;
 
-export const createApplicationSchema = z.object({
+function isValidDateInput(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
+const optionalDate = (label: string) =>
+  z
+    .string()
+    .trim()
+    .refine(
+      (value) => !value || isValidDateInput(value),
+      `Enter a valid ${label}.`,
+    )
+    .transform((value) => (value ? value : undefined));
+
+const optionalWholeNumber = (label: string) =>
+  z
+    .string()
+    .trim()
+    .refine((value) => {
+      if (!value) return true;
+      if (!/^\d+$/.test(value)) return false;
+
+      const amount = Number(value);
+      return Number.isSafeInteger(amount) && amount <= POSTGRES_INTEGER_MAX;
+    }, `${label} must be a whole number between 0 and 2,147,483,647.`)
+    .transform((value) => (value ? Number(value) : undefined));
+
+const applicationEditableFields = {
   company: z
     .string()
     .trim()
@@ -53,7 +82,14 @@ export const createApplicationSchema = z.object({
   location: optionalTrimmedString(200),
   workMode: z.enum(["Remote", "Hybrid", "On-site"]).optional().or(z.literal("")),
   employmentType: z
-    .enum(["Internship", "Full-time", "Part-time", "Contract"])
+    .enum([
+      "Internship",
+      "Full-time",
+      "Part-time",
+      "Contract",
+      "Temporary",
+      "Other",
+    ])
     .optional()
     .or(z.literal("")),
   source: z
@@ -69,7 +105,7 @@ export const createApplicationSchema = z.object({
     .optional()
     .or(z.literal("")),
   applicationUrl: optionalUrl,
-  deadline: optionalDate,
+  deadline: optionalDate("deadline"),
   requiredSkills: z
     .array(
       z
@@ -81,8 +117,14 @@ export const createApplicationSchema = z.object({
     .max(30, "Add no more than 30 skills.")
     .transform((skills) => Array.from(new Set(skills))),
   description: optionalTrimmedString(50_000),
-  status: z.enum(["Wishlist", "Applied"]),
-}).strict();
+};
+
+export const createApplicationSchema = z
+  .object({
+    ...applicationEditableFields,
+    status: z.enum(["Wishlist", "Applied"]),
+  })
+  .strict();
 
 export const createApplicationOptionsSchema = z
   .object({
@@ -105,3 +147,34 @@ export const updateApplicationStatusSchema = z
 export type UpdateApplicationStatusInput = z.infer<
   typeof updateApplicationStatusSchema
 >;
+
+export const updateApplicationSchema = z
+  .object({
+    slug: z
+      .string()
+      .trim()
+      .min(1, "A valid application is required.")
+      .max(160, "The application identifier is invalid."),
+    ...applicationEditableFields,
+    salaryMin: optionalWholeNumber("Minimum salary"),
+    salaryMax: optionalWholeNumber("Maximum salary"),
+    currency: optionalTrimmedString(10),
+    appliedAt: optionalDate("application date"),
+  })
+  .strict()
+  .superRefine((data, context) => {
+    if (
+      data.salaryMin !== undefined &&
+      data.salaryMax !== undefined &&
+      data.salaryMin > data.salaryMax
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["salaryMax"],
+        message: "Maximum salary must be greater than or equal to minimum salary.",
+      });
+    }
+  });
+
+export type UpdateApplicationInput = z.input<typeof updateApplicationSchema>;
+export type UpdateApplicationData = z.output<typeof updateApplicationSchema>;

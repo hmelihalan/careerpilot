@@ -61,6 +61,8 @@ export const uiEmploymentTypeToPrisma = {
   "Full-time": PrismaEmploymentType.FULL_TIME,
   "Part-time": PrismaEmploymentType.PART_TIME,
   Contract: PrismaEmploymentType.CONTRACT,
+  Temporary: PrismaEmploymentType.TEMPORARY,
+  Other: PrismaEmploymentType.OTHER,
 } as const satisfies Record<string, EmploymentType>;
 
 export const prismaSourceToUi = {
@@ -129,6 +131,10 @@ function normalizeOptionalText(value: string | null): string | null {
   return normalized || null;
 }
 
+function toDateInputValue(value: Date | null): string {
+  return value?.toISOString().slice(0, 10) ?? "";
+}
+
 function formatSalary(
   salaryMin: number | null,
   salaryMax: number | null,
@@ -183,6 +189,26 @@ export function toApplicationDetailViewModel(
     dates: {
       appliedAt: application.appliedAt?.toISOString() ?? null,
       deadline: application.deadline?.toISOString() ?? null,
+    },
+    editValues: {
+      company: application.company,
+      role: application.role,
+      location: application.location ?? "",
+      workMode: application.workMode
+        ? prismaWorkModeToUi[application.workMode]
+        : "",
+      employmentType: application.employmentType
+        ? prismaEmploymentTypeToUi[application.employmentType]
+        : "",
+      source: application.source ? prismaSourceToUi[application.source] : "",
+      applicationUrl: application.applicationUrl ?? "",
+      deadline: toDateInputValue(application.deadline),
+      requiredSkills: application.requiredSkills,
+      description: application.description ?? "",
+      salaryMin: application.salaryMin?.toString() ?? "",
+      salaryMax: application.salaryMax?.toString() ?? "",
+      currency: application.currency ?? "",
+      appliedAt: toDateInputValue(application.appliedAt),
     },
     notes: application.notes.map((note) => ({
       id: note.id,

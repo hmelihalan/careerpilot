@@ -29,6 +29,7 @@ type ApplicationDetailHeaderProps = {
   application: ApplicationHeaderData;
   applicationsPath: string;
   demoMode?: boolean;
+  editControl?: ReactNode;
   statusControl?: ReactNode;
 };
 
@@ -36,6 +37,7 @@ export function ApplicationDetailHeader({
   application,
   applicationsPath,
   demoMode = false,
+  editControl,
   statusControl,
 }: ApplicationDetailHeaderProps) {
   return (
@@ -98,17 +100,23 @@ export function ApplicationDetailHeader({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-lg"
-              disabled
-              title={demoMode ? "Editing is unavailable in demo mode" : "Editing is coming next"}
-            >
-              <Pencil data-icon="inline-start" aria-hidden="true" />
-              Edit
-            </Button>
+            {editControl ?? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-lg"
+                disabled
+                title={
+                  demoMode
+                    ? "Editing is unavailable in demo mode"
+                    : "Editing is coming next"
+                }
+              >
+                <Pencil data-icon="inline-start" aria-hidden="true" />
+                Edit
+              </Button>
+            )}
             {statusControl ?? (
               <Button
                 type="button"

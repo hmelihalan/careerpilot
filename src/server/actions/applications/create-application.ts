@@ -12,21 +12,15 @@ import {
   uiSourceToPrisma,
   uiWorkModeToPrisma,
 } from "@/src/server/applications/application-mappings";
-import {
-  normalizeApplicationText,
-  normalizeApplicationUrl,
-} from "@/src/server/applications/normalize-application";
+import { findDuplicateApplication } from "@/src/server/applications/find-duplicate-application";
 import {
   createApplicationOptionsSchema,
   createApplicationSchema,
-  type CreateApplicationInput,
   type CreateApplicationOptions,
 } from "@/src/server/validations/application";
 import type {
   ApplicationFormData,
   CreateApplicationResult,
-  DuplicateApplicationReason,
-  DuplicateApplicationSummary,
 } from "@/src/types/application";
 
 function createBaseSlug(company: string, role: string): string {
@@ -42,91 +36,7 @@ function createBaseSlug(company: string, role: string): string {
   return slug || "application";
 }
 
-type DuplicateApplication = {
-  duplicateReason: DuplicateApplicationReason;
-  duplicate: DuplicateApplicationSummary;
-};
 
-async function findDuplicateApplication(
-  userId: string,
-  data: CreateApplicationInput,
-): Promise<DuplicateApplication | null> {
-  if (data.applicationUrl) {
-    const normalizedSubmittedUrl = normalizeApplicationUrl(data.applicationUrl);
-    const urlCandidates = await prisma.application.findMany({
-      where: {
-        userId,
-        applicationUrl: { not: null },
-      },
-      select: {
-        id: true,
-        slug: true,
-        company: true,
-        role: true,
-        location: true,
-        applicationUrl: true,
-      },
-    });
-    const duplicateByUrl = urlCandidates.find(
-      (candidate) =>
-        normalizedSubmittedUrl !== null &&
-        candidate.applicationUrl !== null &&
-        normalizeApplicationUrl(candidate.applicationUrl) === normalizedSubmittedUrl,
-    );
-
-    if (duplicateByUrl) {
-      return {
-        duplicateReason: "url",
-        duplicate: {
-          id: duplicateByUrl.id,
-          slug: duplicateByUrl.slug,
-          company: duplicateByUrl.company,
-          role: duplicateByUrl.role,
-          location: duplicateByUrl.location,
-        },
-      };
-    }
-  }
-
-  if (!data.location) return null;
-
-  const normalizedCompany = normalizeApplicationText(data.company);
-  const normalizedRole = normalizeApplicationText(data.role);
-  const normalizedLocation = normalizeApplicationText(data.location);
-  const fieldCandidates = await prisma.application.findMany({
-    where: {
-      userId,
-      location: { not: null },
-    },
-    select: {
-      id: true,
-      slug: true,
-      company: true,
-      role: true,
-      location: true,
-    },
-  });
-  const duplicateByFields = fieldCandidates.find(
-    (candidate) =>
-      candidate.location !== null &&
-      normalizeApplicationText(candidate.company) === normalizedCompany &&
-      normalizeApplicationText(candidate.role) === normalizedRole &&
-      normalizeApplicationText(candidate.location) === normalizedLocation,
-  );
-
-  if (!duplicateByFields) return null;
-
-  return {
-    duplicateReason: "company-role-location",
-    duplicate: {
-      id: duplicateByFields.id,
-      slug: duplicateByFields.slug,
-      company: duplicateByFields.company,
-      role: duplicateByFields.role,
-      location: duplicateByFields.location,
-    },
-  };
-}
 
 function isUniqueConstraintError(error: unknown): boolean {
   return (

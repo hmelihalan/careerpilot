@@ -61,6 +61,7 @@ export type ApplicationDetailViewModel = {
     appliedAt: string | null;
     deadline: string | null;
   };
+  editValues: ApplicationEditFormData;
   notes: readonly ApplicationDetailNote[];
   statusHistory: readonly ApplicationDetailStatusHistory[];
   createdAt: string;
@@ -82,7 +83,7 @@ export type MockApplication = Omit<
   description: string;
 };
 
-export type ApplicationFormData = {
+export type ApplicationCoreFormData = {
   company: string;
   role: string;
   location: string;
@@ -93,11 +94,25 @@ export type ApplicationFormData = {
   deadline: string;
   requiredSkills: string[];
   description: string;
+};
+
+export type ApplicationFormData = ApplicationCoreFormData & {
   status: ApplicationCreationStatus;
+};
+
+export type ApplicationEditFormData = ApplicationCoreFormData & {
+  salaryMin: string;
+  salaryMax: string;
+  currency: string;
+  appliedAt: string;
 };
 
 export type ApplicationFieldErrors = Partial<
   Record<keyof ApplicationFormData, string>
+>;
+
+export type ApplicationEditFieldErrors = Partial<
+  Record<keyof ApplicationEditFormData, string>
 >;
 
 export type CreateApplicationFieldErrors = Partial<
@@ -159,5 +174,26 @@ export type UpdateApplicationStatusResult =
       success: false;
       reason: "validation" | "not-found" | "server";
       fieldErrors?: Record<string, string[]>;
+      formError: string;
+    };
+
+export type UpdateApplicationResult =
+  | {
+      success: true;
+      slug: string;
+    }
+  | {
+      success: false;
+      reason: "duplicate";
+      duplicateReason: DuplicateApplicationReason;
+      duplicate: DuplicateApplicationSummary;
+      formError: string;
+    }
+  | {
+      success: false;
+      reason: "validation" | "not-found" | "server";
+      fieldErrors?: Partial<
+        Record<keyof ApplicationEditFormData | "slug", string[]>
+      >;
       formError: string;
     };

@@ -75,7 +75,12 @@ export function ReviewApplicationStep({
           <ApplicationFormFields
             application={application}
             errors={errors}
-            onChange={onChange}
+            onChange={(field, value) => onChange(field, value)}
+            initialStatus={{
+              value: application.status,
+              error: errors.status,
+              onChange: (value) => onChange("status", value),
+            }}
           />
         </div>
       </div>
