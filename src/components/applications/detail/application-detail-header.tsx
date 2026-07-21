@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   BriefcaseBusiness,
@@ -28,12 +29,14 @@ type ApplicationDetailHeaderProps = {
   application: ApplicationHeaderData;
   applicationsPath: string;
   demoMode?: boolean;
+  statusControl?: ReactNode;
 };
 
 export function ApplicationDetailHeader({
   application,
   applicationsPath,
   demoMode = false,
+  statusControl,
 }: ApplicationDetailHeaderProps) {
   return (
     <div className="space-y-3">
@@ -106,16 +109,18 @@ export function ApplicationDetailHeader({
               <Pencil data-icon="inline-start" aria-hidden="true" />
               Edit
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="rounded-lg"
-              disabled
-              title={demoMode ? "Status changes are unavailable in demo mode" : "Status changes are coming next"}
-            >
-              Change Status
-              <ChevronDown data-icon="inline-end" aria-hidden="true" />
-            </Button>
+            {statusControl ?? (
+              <Button
+                type="button"
+                size="sm"
+                className="rounded-lg"
+                disabled
+                title={demoMode ? "Status changes are unavailable in demo mode" : "Status changes are coming next"}
+              >
+                Change Status
+                <ChevronDown data-icon="inline-end" aria-hidden="true" />
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"

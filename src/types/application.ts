@@ -1,3 +1,5 @@
+import type { ApplicationStatus as PrismaApplicationStatusValue } from "@/src/generated/prisma/enums";
+
 export type ApplicationImportMethod = "description" | "url";
 
 export type ApplicationCreationStatus = "Wishlist" | "Applied";
@@ -46,6 +48,7 @@ export type ApplicationDetailViewModel = {
   company: string;
   role: string;
   status: ApplicationStatus;
+  statusValue: PrismaApplicationStatusValue;
   location: string | null;
   workMode: ApplicationWorkMode | null;
   employmentType: string | null;
@@ -140,3 +143,21 @@ export type AddApplicationStep =
   | "duplicate"
   | "saving"
   | "success";
+
+export type UpdateApplicationStatusResult =
+  | {
+      success: true;
+      status: PrismaApplicationStatusValue;
+      changed: true;
+    }
+  | {
+      success: true;
+      status: PrismaApplicationStatusValue;
+      changed: false;
+    }
+  | {
+      success: false;
+      reason: "validation" | "not-found" | "server";
+      fieldErrors?: Record<string, string[]>;
+      formError: string;
+    };

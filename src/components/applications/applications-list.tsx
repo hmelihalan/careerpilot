@@ -4,16 +4,8 @@ import { MapPin, MoreHorizontal, SearchX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ApplicationListItem, ApplicationStatus } from "@/src/types/application";
-
-const statusStyles: Record<ApplicationStatus, string> = {
-  Wishlist: "bg-slate-100 text-slate-700",
-  Applied: "bg-blue-50 text-blue-700",
-  Assessment: "bg-amber-50 text-amber-700",
-  Interview: "bg-violet-50 text-violet-700",
-  Offer: "bg-emerald-50 text-emerald-700",
-  Rejected: "bg-rose-50 text-rose-700",
-};
+import { applicationStatusBadgeStyles as statusStyles } from "@/src/constants/application-status";
+import type { ApplicationListItem } from "@/src/types/application";
 
 type ApplicationsListProps = {
   applications: readonly ApplicationListItem[];

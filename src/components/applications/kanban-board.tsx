@@ -1,4 +1,5 @@
 import { KanbanColumn } from "@/src/components/applications/kanban-column";
+import { APPLICATION_STATUS_LABELS } from "@/src/constants/application-status";
 import type { ApplicationListItem, ApplicationStatus } from "@/src/types/application";
 
 type KanbanStage = {
@@ -6,14 +7,7 @@ type KanbanStage = {
   applications: readonly ApplicationListItem[];
 };
 
-const stageTitles = [
-  "Wishlist",
-  "Applied",
-  "Assessment",
-  "Interview",
-  "Offer",
-  "Rejected",
-] as const satisfies readonly ApplicationStatus[];
+const stageTitles = APPLICATION_STATUS_LABELS;
 
 type KanbanBoardProps = {
   applications: readonly ApplicationListItem[];

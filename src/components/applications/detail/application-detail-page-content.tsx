@@ -1,10 +1,11 @@
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ActivityTimeline } from "@/src/components/applications/detail/activity-timeline";
 import type { ApplicationHeaderData } from "@/src/components/applications/detail/application-detail-header";
 import { ApplicationDetailHeader } from "@/src/components/applications/detail/application-detail-header";
+import { ApplicationStatusControl } from "@/src/components/applications/detail/application-status-control";
 import type { ApplicationDetailTab } from "@/src/components/applications/detail/application-detail-tabs";
 import { ApplicationDetailTabs } from "@/src/components/applications/detail/application-detail-tabs";
 import { ApplicationNotes } from "@/src/components/applications/detail/application-notes";
@@ -70,6 +71,7 @@ export function ApplicationDetailPageContent(
   let applicationsPath: string;
   let demoMode: boolean;
   let headerApplication: ApplicationHeaderData;
+  let statusControl: ReactNode;
   let tabs: readonly ApplicationDetailTab[];
 
   if (props.mode === "demo") {
@@ -240,6 +242,12 @@ export function ApplicationDetailPageContent(
         content: <ActivityTimeline history={application.statusHistory} />,
       },
     ];
+    statusControl = (
+      <ApplicationStatusControl
+        slug={application.slug}
+        currentStatus={application.statusValue}
+      />
+    );
   }
 
   return (
@@ -250,6 +258,7 @@ export function ApplicationDetailPageContent(
         applicationsPath={applicationsPath}
         demoMode={demoMode}
         application={headerApplication}
+        statusControl={statusControl}
       />
       <Suspense
         fallback={

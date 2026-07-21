@@ -14,6 +14,7 @@ import {
   type EmploymentType,
   type WorkMode,
 } from "../../generated/prisma/enums";
+import { APPLICATION_STATUS_META } from "@/src/constants/application-status";
 import type {
   ApplicationCreationStatus,
   ApplicationDetailViewModel,
@@ -22,14 +23,12 @@ import type {
   ApplicationWorkMode,
 } from "@/src/types/application";
 
-export const prismaStatusToUi = {
-  [PrismaApplicationStatus.WISHLIST]: "Wishlist",
-  [PrismaApplicationStatus.APPLIED]: "Applied",
-  [PrismaApplicationStatus.ASSESSMENT]: "Assessment",
-  [PrismaApplicationStatus.INTERVIEW]: "Interview",
-  [PrismaApplicationStatus.OFFER]: "Offer",
-  [PrismaApplicationStatus.REJECTED]: "Rejected",
-} as const satisfies Record<ApplicationStatus, UiApplicationStatus>;
+export const prismaStatusToUi = Object.fromEntries(
+  Object.entries(APPLICATION_STATUS_META).map(([value, meta]) => [
+    value,
+    meta.label,
+  ]),
+) as Record<ApplicationStatus, UiApplicationStatus>;
 
 export const uiInitialStatusToPrisma = {
   Wishlist: PrismaApplicationStatus.WISHLIST,
@@ -164,6 +163,7 @@ export function toApplicationDetailViewModel(
     company: application.company,
     role: application.role,
     status: prismaStatusToUi[application.status],
+    statusValue: application.status,
     location: normalizeOptionalText(application.location),
     workMode: application.workMode
       ? prismaWorkModeToUi[application.workMode]

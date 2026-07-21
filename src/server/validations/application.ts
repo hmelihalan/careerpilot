@@ -2,6 +2,8 @@ import "server-only";
 
 import { z } from "zod";
 
+import { APPLICATION_STATUS_VALUES } from "@/src/constants/application-status";
+
 const optionalTrimmedString = (maximumLength: number) =>
   z
     .string()
@@ -91,4 +93,15 @@ export const createApplicationOptionsSchema = z
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
 export type CreateApplicationOptions = z.input<
   typeof createApplicationOptionsSchema
+>;
+
+export const updateApplicationStatusSchema = z
+  .object({
+    slug: z.string().trim().min(1, "A valid application is required."),
+    status: z.enum(APPLICATION_STATUS_VALUES),
+  })
+  .strict();
+
+export type UpdateApplicationStatusInput = z.infer<
+  typeof updateApplicationStatusSchema
 >;
