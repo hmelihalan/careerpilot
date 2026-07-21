@@ -142,21 +142,34 @@ function formatSalary(
 ): string | null {
   if (salaryMin === null && salaryMax === null) return null;
 
-  const prefix = currency?.trim() ? `${currency.trim().toUpperCase()} ` : "";
-  const formatAmount = (amount: number) =>
-    new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(amount);
+  const normalizedCurrency = normalizeOptionalText(currency)?.toUpperCase();
+  const numberFormatter = new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  });
+  const formatAmount = (amount: number): string => {
+    if (!normalizedCurrency) return numberFormatter.format(amount);
+
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: normalizedCurrency,
+        currencyDisplay: "narrowSymbol",
+        maximumFractionDigits: 0,
+      }).format(amount);
+    } catch {
+      return `${normalizedCurrency} ${numberFormatter.format(amount)}`;
+    }
+  };
 
   if (salaryMin !== null && salaryMax !== null) {
-    return `${prefix}${formatAmount(salaryMin)}–${formatAmount(salaryMax)}`;
+    return `${formatAmount(salaryMin)} – ${formatAmount(salaryMax)}`;
   }
 
   if (salaryMin !== null) {
-    return `From ${prefix}${formatAmount(salaryMin)}`;
+    return `From ${formatAmount(salaryMin)}`;
   }
 
-  return salaryMax === null
-    ? null
-    : `Up to ${prefix}${formatAmount(salaryMax)}`;
+  return salaryMax === null ? null : `Up to ${formatAmount(salaryMax)}`;
 }
 
 export function toApplicationDetailViewModel(

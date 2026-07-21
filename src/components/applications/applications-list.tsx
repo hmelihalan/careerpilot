@@ -61,18 +61,24 @@ export function ApplicationsList({
                 key={application.id}
                 className="group text-slate-600 transition-colors hover:bg-indigo-50/30 focus-within:bg-indigo-50/30"
               >
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-medium text-slate-600">
-                      {application.initials}
-                    </span>
-                    <span className="font-medium text-slate-900">{application.company}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
+                <td className="p-0">
                   <Link
                     href={`${applicationsPath}/${application.slug}`}
-                    className="rounded font-medium text-slate-800 hover:text-indigo-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                    aria-label={`View ${application.role} application at ${application.company}`}
+                    className="flex items-center gap-2.5 rounded px-4 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset"
+                  >
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-medium text-slate-600 transition-colors group-hover:bg-indigo-50">
+                      {application.initials}
+                    </span>
+                    <span className="font-medium text-slate-900 transition-colors group-hover:text-indigo-700">
+                      {application.company}
+                    </span>
+                  </Link>
+                </td>
+                <td className="p-0">
+                  <Link
+                    href={`${applicationsPath}/${application.slug}`}
+                    className="block rounded px-4 py-3 font-medium text-slate-800 transition-colors hover:text-indigo-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-inset"
                   >
                     {application.role}
                   </Link>

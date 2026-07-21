@@ -181,7 +181,7 @@ export function ApplicationDetailPageContent(
                 ? formatDetailDate(application.dates.deadline)
                 : "Not available",
               source: application.source ?? "Not available",
-              salary: application.salary ?? "Not available",
+              salary: application.salary ?? "Not specified",
               applicationUrl: application.applicationUrl,
               summary: application.jobDescription,
               skills: application.skills,

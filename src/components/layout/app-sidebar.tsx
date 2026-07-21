@@ -69,12 +69,18 @@ export function AppSidebar({ mode, user }: AppSidebarProps) {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r bg-white md:flex">
       <div className="flex h-14 items-center gap-2.5 border-b px-4">
-        <span className="flex size-7 items-center justify-center rounded-lg bg-indigo-600 text-white">
-          <BriefcaseBusiness className="size-3.5" aria-hidden="true" />
-        </span>
-        <span className="text-sm font-medium tracking-tight text-slate-950">
-          CareerPilot
-        </span>
+        <Link
+          href={dashboardHref}
+          aria-label="Go to dashboard"
+          className="flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+        >
+          <span className="flex size-7 items-center justify-center rounded-lg bg-indigo-600 text-white">
+            <BriefcaseBusiness className="size-3.5" aria-hidden="true" />
+          </span>
+          <span className="text-sm font-medium tracking-tight text-slate-950">
+            CareerPilot
+          </span>
+        </Link>
         {mode === "demo" ? (
           <span className="ml-auto rounded-md border border-indigo-100 bg-indigo-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-indigo-700">
             Demo
