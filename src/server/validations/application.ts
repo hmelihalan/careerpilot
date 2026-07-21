@@ -82,4 +82,13 @@ export const createApplicationSchema = z.object({
   status: z.enum(["Wishlist", "Applied"]),
 }).strict();
 
+export const createApplicationOptionsSchema = z
+  .object({
+    forceCreate: z.boolean().optional().default(false),
+  })
+  .strict();
+
 export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
+export type CreateApplicationOptions = z.input<
+  typeof createApplicationOptionsSchema
+>;

@@ -62,6 +62,18 @@ export type CreateApplicationFieldErrors = Partial<
   Record<keyof ApplicationFormData, string[]>
 >;
 
+export type DuplicateApplicationReason =
+  | "url"
+  | "company-role-location";
+
+export type DuplicateApplicationSummary = {
+  id: string;
+  slug: string;
+  company: string;
+  role: string;
+  location: string | null;
+};
+
 export type CreateApplicationResult =
   | {
       success: true;
@@ -70,6 +82,13 @@ export type CreateApplicationResult =
     }
   | {
       success: false;
+      reason: "duplicate";
+      duplicateReason: DuplicateApplicationReason;
+      duplicate: DuplicateApplicationSummary;
+    }
+  | {
+      success: false;
+      reason: "error";
       fieldErrors?: CreateApplicationFieldErrors;
       formError: string;
     };
@@ -79,5 +98,6 @@ export type AddApplicationStep =
   | "loading"
   | "review"
   | "error"
+  | "duplicate"
   | "saving"
   | "success";

@@ -12,10 +12,21 @@ import {
   uiSourceToPrisma,
   uiWorkModeToPrisma,
 } from "@/src/server/applications/application-mappings";
-import { createApplicationSchema } from "@/src/server/validations/application";
+import {
+  normalizeApplicationText,
+  normalizeApplicationUrl,
+} from "@/src/server/applications/normalize-application";
+import {
+  createApplicationOptionsSchema,
+  createApplicationSchema,
+  type CreateApplicationInput,
+  type CreateApplicationOptions,
+} from "@/src/server/validations/application";
 import type {
   ApplicationFormData,
   CreateApplicationResult,
+  DuplicateApplicationReason,
+  DuplicateApplicationSummary,
 } from "@/src/types/application";
 
 function createBaseSlug(company: string, role: string): string {
@@ -31,6 +42,92 @@ function createBaseSlug(company: string, role: string): string {
   return slug || "application";
 }
 
+type DuplicateApplication = {
+  duplicateReason: DuplicateApplicationReason;
+  duplicate: DuplicateApplicationSummary;
+};
+
+async function findDuplicateApplication(
+  userId: string,
+  data: CreateApplicationInput,
+): Promise<DuplicateApplication | null> {
+  if (data.applicationUrl) {
+    const normalizedSubmittedUrl = normalizeApplicationUrl(data.applicationUrl);
+    const urlCandidates = await prisma.application.findMany({
+      where: {
+        userId,
+        applicationUrl: { not: null },
+      },
+      select: {
+        id: true,
+        slug: true,
+        company: true,
+        role: true,
+        location: true,
+        applicationUrl: true,
+      },
+    });
+    const duplicateByUrl = urlCandidates.find(
+      (candidate) =>
+        normalizedSubmittedUrl !== null &&
+        candidate.applicationUrl !== null &&
+        normalizeApplicationUrl(candidate.applicationUrl) === normalizedSubmittedUrl,
+    );
+
+    if (duplicateByUrl) {
+      return {
+        duplicateReason: "url",
+        duplicate: {
+          id: duplicateByUrl.id,
+          slug: duplicateByUrl.slug,
+          company: duplicateByUrl.company,
+          role: duplicateByUrl.role,
+          location: duplicateByUrl.location,
+        },
+      };
+    }
+  }
+
+  if (!data.location) return null;
+
+  const normalizedCompany = normalizeApplicationText(data.company);
+  const normalizedRole = normalizeApplicationText(data.role);
+  const normalizedLocation = normalizeApplicationText(data.location);
+  const fieldCandidates = await prisma.application.findMany({
+    where: {
+      userId,
+      location: { not: null },
+    },
+    select: {
+      id: true,
+      slug: true,
+      company: true,
+      role: true,
+      location: true,
+    },
+  });
+  const duplicateByFields = fieldCandidates.find(
+    (candidate) =>
+      candidate.location !== null &&
+      normalizeApplicationText(candidate.company) === normalizedCompany &&
+      normalizeApplicationText(candidate.role) === normalizedRole &&
+      normalizeApplicationText(candidate.location) === normalizedLocation,
+  );
+
+  if (!duplicateByFields) return null;
+
+  return {
+    duplicateReason: "company-role-location",
+    duplicate: {
+      id: duplicateByFields.id,
+      slug: duplicateByFields.slug,
+      company: duplicateByFields.company,
+      role: duplicateByFields.role,
+      location: duplicateByFields.location,
+    },
+  };
+}
+
 function isUniqueConstraintError(error: unknown): boolean {
   return (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -40,19 +137,42 @@ function isUniqueConstraintError(error: unknown): boolean {
 
 export async function createApplication(
   input: ApplicationFormData,
+  options: CreateApplicationOptions = {},
 ): Promise<CreateApplicationResult> {
   const userId = await requireUser();
   const parsed = createApplicationSchema.safeParse(input);
+  const parsedOptions = createApplicationOptionsSchema.safeParse(options);
 
   if (!parsed.success) {
     return {
       success: false,
+      reason: "error",
       fieldErrors: parsed.error.flatten().fieldErrors,
       formError: "Please correct the highlighted fields and try again.",
     };
   }
 
+  if (!parsedOptions.success) {
+    return {
+      success: false,
+      reason: "error",
+      formError: "The create request was invalid. Please try again.",
+    };
+  }
+
   const data = parsed.data;
+
+  if (!parsedOptions.data.forceCreate) {
+    const duplicate = await findDuplicateApplication(userId, data);
+
+    if (duplicate) {
+      return {
+        success: false,
+        reason: "duplicate",
+        ...duplicate,
+      };
+    }
+  }
   const status = uiInitialStatusToPrisma[data.status];
   const baseSlug = createBaseSlug(data.company, data.role);
 
@@ -122,6 +242,7 @@ export async function createApplication(
 
       return {
         success: false,
+        reason: "error",
         formError: "We couldn’t save this application. Please try again.",
       };
     }
@@ -129,6 +250,7 @@ export async function createApplication(
 
   return {
     success: false,
+    reason: "error",
     formError: "We couldn’t create a unique application link. Please try again.",
   };
 }

@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EMPTY_APPLICATION, MOCK_EXTRACTED_APPLICATION, MOCK_IMPORT_ERROR_TOKEN } from "@/src/constants/application";
+import { DuplicateApplicationState } from "@/src/components/applications/create/duplicate-application-state";
 import { ImportApplicationStep } from "@/src/components/applications/create/import-application-step";
 import { ImportErrorState } from "@/src/components/applications/create/import-error-state";
 import { ImportLoadingState } from "@/src/components/applications/create/import-loading-state";
@@ -34,6 +35,8 @@ import type {
   ApplicationFieldErrors,
   ApplicationFormData,
   ApplicationImportMethod,
+  DuplicateApplicationReason,
+  DuplicateApplicationSummary,
 } from "@/src/types/application";
 
 type AddApplicationDialogContextValue = {
@@ -86,6 +89,10 @@ export function AddApplicationDialog({
   );
   const [fieldErrors, setFieldErrors] = useState<ApplicationFieldErrors>({});
   const [formError, setFormError] = useState<string>();
+  const [duplicateMatch, setDuplicateMatch] = useState<{
+    duplicateReason: DuplicateApplicationReason;
+    duplicate: DuplicateApplicationSummary;
+  }>();
   const [wasAnalyzed, setWasAnalyzed] = useState(false);
   const [savedStatus, setSavedStatus] =
     useState<ApplicationCreationStatus>("Wishlist");
@@ -110,6 +117,7 @@ export function AddApplicationDialog({
     setApplication(cloneEmptyApplication());
     setFieldErrors({});
     setFormError(undefined);
+    setDuplicateMatch(undefined);
     setWasAnalyzed(false);
     setSavedStatus("Wishlist");
     submittingRef.current = false;
@@ -208,41 +216,19 @@ export function AddApplicationDialog({
     setFormError(undefined);
   }
 
-  function handleSave(status: ApplicationCreationStatus) {
-    if (submittingRef.current || isPending) return;
-
-    const applicationToSave = { ...application, status };
-    const errors = validateApplication(applicationToSave);
-
-    if (Object.keys(errors).length > 0) {
-      setApplication(applicationToSave);
-      setFieldErrors(errors);
-      return;
-    }
-
-    setApplication(applicationToSave);
-    setFieldErrors({});
-    setFormError(undefined);
-    setSavedStatus(status);
-    setStep("saving");
-    submittingRef.current = true;
-
-    if (demoMode) {
-      const saveTimer = window.setTimeout(() => {
-        submittingRef.current = false;
-        setStep("success");
-        const closeTimer = window.setTimeout(closeDialog, 900);
-        timersRef.current.push(closeTimer);
-      }, 650);
-      timersRef.current.push(saveTimer);
-      return;
-    }
-
+  function submitAuthenticatedApplication(
+    applicationToSave: ApplicationFormData,
+    forceCreate = false,
+  ) {
     const session = sessionRef.current;
+    submittingRef.current = true;
+    setStep("saving");
 
     startTransition(async () => {
       try {
-        const result = await createApplication(applicationToSave);
+        const result = await createApplication(applicationToSave, {
+          forceCreate,
+        });
         submittingRef.current = false;
 
         if (session !== sessionRef.current) {
@@ -251,6 +237,15 @@ export function AddApplicationDialog({
         }
 
         if (!result.success) {
+          if (result.reason === "duplicate") {
+            setDuplicateMatch({
+              duplicateReason: result.duplicateReason,
+              duplicate: result.duplicate,
+            });
+            setStep("duplicate");
+            return;
+          }
+
           const nextFieldErrors: ApplicationFieldErrors = {};
           const fields = Object.keys(applicationToSave) as Array<
             keyof ApplicationFormData
@@ -280,6 +275,47 @@ export function AddApplicationDialog({
     });
   }
 
+  function handleSave(status: ApplicationCreationStatus) {
+    if (submittingRef.current || isPending) return;
+
+    const applicationToSave = { ...application, status };
+    const errors = validateApplication(applicationToSave);
+
+    if (Object.keys(errors).length > 0) {
+      setApplication(applicationToSave);
+      setFieldErrors(errors);
+      return;
+    }
+
+    setApplication(applicationToSave);
+    setFieldErrors({});
+    setFormError(undefined);
+    setDuplicateMatch(undefined);
+    setSavedStatus(status);
+
+    if (demoMode) {
+      setStep("saving");
+      submittingRef.current = true;
+      const saveTimer = window.setTimeout(() => {
+        submittingRef.current = false;
+        setStep("success");
+        const closeTimer = window.setTimeout(closeDialog, 900);
+        timersRef.current.push(closeTimer);
+      }, 650);
+      timersRef.current.push(saveTimer);
+      return;
+    }
+
+    submitAuthenticatedApplication(applicationToSave);
+  }
+
+  function handleAddAnyway() {
+    if (submittingRef.current || isPending) return;
+
+    setDuplicateMatch(undefined);
+    submitAuthenticatedApplication(application, true);
+  }
+
   return (
     <AddApplicationDialogContext.Provider value={{ openAddApplicationDialog }}>
       {children}
@@ -307,6 +343,16 @@ export function AddApplicationDialog({
               onRetry={() => setStep("import")}
               onManualEntry={handleManualEntry}
               onCancel={closeDialog}
+            />
+          ) : null}
+
+          {step === "duplicate" && duplicateMatch ? (
+            <DuplicateApplicationState
+              duplicate={duplicateMatch.duplicate}
+              duplicateReason={duplicateMatch.duplicateReason}
+              onAddAnyway={handleAddAnyway}
+              onCancel={closeDialog}
+              onViewExisting={closeDialog}
             />
           ) : null}
 
