@@ -1,14 +1,8 @@
-import { FileText } from "lucide-react";
+import { ResumesPageContent } from "@/src/components/resumes/resumes-page-content";
+import { getResumesForCurrentUser } from "@/src/server/resumes/get-resumes";
 
-import { FeaturePlaceholder } from "@/src/components/shared/feature-placeholder";
+export default async function ResumesPage() {
+  const resumes = await getResumesForCurrentUser();
 
-export default function ResumesPage() {
-  return (
-    <FeaturePlaceholder
-      title="Resumes"
-      description="Manage tailored resume versions for your job applications."
-      message="Upload and manage resumes, then connect them to job applications. Resume storage and parsing are the next planned module."
-      icon={FileText}
-    />
-  );
+  return <ResumesPageContent resumes={resumes} />;
 }

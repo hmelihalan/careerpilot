@@ -16,6 +16,14 @@ enum ApplicationStatus {
   REJECTED
 }
 
+enum ResumeParseStatus {
+  PENDING
+  EXTRACTING
+  READY
+  FAILED
+  OCR_REQUIRED
+}
+
 enum WorkMode {
   REMOTE
   HYBRID
@@ -70,6 +78,25 @@ model Application {
   @@index([userId])
   @@index([userId, status])
   @@index([userId, createdAt])
+}
+
+model Resume {
+  id            String            @id @default(cuid())
+  userId        String
+  name          String
+  originalName  String
+  blobPathname  String            @unique
+  mimeType      String
+  sizeBytes     Int
+  isDefault     Boolean           @default(false)
+  parseStatus   ResumeParseStatus @default(PENDING)
+  parseError    String?
+  extractedText String?           @db.Text
+  parsedData    Json?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([userId, updatedAt])
 }
 
 model ApplicationStatusHistory {
