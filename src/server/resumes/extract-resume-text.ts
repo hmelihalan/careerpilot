@@ -1,5 +1,10 @@
 import "server-only";
 
+import {
+  createResumePdfLoadingTask,
+  RESUME_OCR_CHARACTER_THRESHOLD,
+} from "./load-pdf-document";
+
 export type ExtractedResumePage = {
   pageNumber: number;
   text: string;
@@ -29,7 +34,7 @@ type PdfTextItem = {
   height: number;
 };
 
-const OCR_CHARACTER_THRESHOLD = 40;
+
 
 function normalizeWhitespace(value: string): string {
   return value
@@ -113,14 +118,7 @@ export async function extractResumeText(
     throw new Error("PDF input is empty.");
   }
 
-  const { getDocument } = await import(
-    "pdfjs-dist/legacy/build/pdf.mjs"
-  );
-
-  const loadingTask = getDocument({
-    data: pdfBuffer,
-    useWorkerFetch: false,
-  });
+  const loadingTask = await createResumePdfLoadingTask(pdfBuffer);
 
   const document = await loadingTask.promise;
 
@@ -177,7 +175,7 @@ export async function extractResumeText(
       text,
       pages,
       characterCount,
-      requiresOcr: characterCount < OCR_CHARACTER_THRESHOLD,
+      requiresOcr: characterCount < RESUME_OCR_CHARACTER_THRESHOLD,
     };
   } finally {
     await loadingTask.destroy();
