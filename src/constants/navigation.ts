@@ -1,7 +1,6 @@
 import {
   BarChart3,
   BriefcaseBusiness,
-  FileText,
   LayoutDashboard,
   Settings,
   Sparkles,
@@ -40,7 +39,6 @@ export const appNavigation: Record<AppMode, readonly AppNavigationItem[]> = {
       href: appRoutes.authenticated.applications,
       icon: BriefcaseBusiness,
     },
-    { name: "Resumes", href: "/resumes", icon: FileText },
     { name: "AI Studio", href: "/ai-studio", icon: Sparkles },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
@@ -52,7 +50,6 @@ export const appNavigation: Record<AppMode, readonly AppNavigationItem[]> = {
       href: appRoutes.demo.applications,
       icon: BriefcaseBusiness,
     },
-    { name: "Resumes", icon: FileText, preview: true },
     { name: "AI Studio", icon: Sparkles, preview: true },
     { name: "Analytics", icon: BarChart3, preview: true },
     { name: "Settings", icon: Settings, preview: true },
