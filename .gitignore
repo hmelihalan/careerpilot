@@ -48,5 +48,8 @@ next-env.d.ts
 /.clerk/
 
 # machine learning
-/ml/data/raw/
-/ml/data/processed/
+/ml/data/
+
+# python
+__pycache__/
+*.py[cod]

@@ -10,6 +10,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "resumes:extract-dataset": "tsx scripts/extract-resume-dataset.ts",
+    "resumes:ocr-pilot": "python ml/ocr_pilot.py",
     "postinstall": "prisma generate --config prisma.generate.config.ts"
   },
   "dependencies": {
