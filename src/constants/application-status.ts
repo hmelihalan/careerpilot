@@ -1,5 +1,5 @@
-import { ApplicationStatus as PrismaApplicationStatus } from "@/src/generated/prisma/enums";
-import type { ApplicationStatus as UiApplicationStatus } from "@/src/types/application";
+import { ApplicationStatus as PrismaApplicationStatus } from "../generated/prisma/enums";
+import type { ApplicationStatus as UiApplicationStatus } from "../types/application";
 
 export type PrismaApplicationStatusValue =
   (typeof PrismaApplicationStatus)[keyof typeof PrismaApplicationStatus];

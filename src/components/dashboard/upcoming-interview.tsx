@@ -18,7 +18,7 @@ export function UpcomingInterview({
     return (
       <Card size="sm" className="h-full border border-slate-200 shadow-none ring-0">
         <CardHeader>
-          <CardTitle>Upcoming Interview</CardTitle>
+          <CardTitle>Upcoming Interviews</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-1 flex-col items-center justify-center py-8 text-center">
           <span className="flex size-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
@@ -35,7 +35,7 @@ export function UpcomingInterview({
   return (
     <Card size="sm" className="h-full border border-slate-200 shadow-none ring-0">
       <CardHeader>
-        <CardTitle>Upcoming Interview</CardTitle>
+        <CardTitle>Upcoming Interviews</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">
         <div className="flex items-center gap-2.5">

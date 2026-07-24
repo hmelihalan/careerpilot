@@ -135,7 +135,7 @@ function toDateInputValue(value: Date | null): string {
   return value?.toISOString().slice(0, 10) ?? "";
 }
 
-function formatSalary(
+export function formatApplicationSalary(
   salaryMin: number | null,
   salaryMax: number | null,
   currency: string | null,
@@ -193,7 +193,7 @@ export function toApplicationDetailViewModel(
     source: application.source ? prismaSourceToUi[application.source] : null,
     applicationUrl: normalizeOptionalText(application.applicationUrl),
     jobDescription: normalizeOptionalText(application.description),
-    salary: formatSalary(
+    salary: formatApplicationSalary(
       application.salaryMin,
       application.salaryMax,
       application.currency,

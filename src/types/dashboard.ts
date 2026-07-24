@@ -17,8 +17,21 @@ export type DashboardRecentApplication = {
   company: string;
   role: string;
   status: ApplicationStatus;
-  location: string;
+  location: string | null;
+  salary: string | null;
+  appliedAt: string | null;
   updatedAt: string;
+};
+
+export type DashboardUpcomingDeadline = {
+  id: string;
+  slug: string;
+  company: string;
+  role: string;
+  status: ApplicationStatus;
+  location: string | null;
+  deadline: string;
+  deadlineLabel: string;
 };
 
 export type DashboardViewModel = {
@@ -26,4 +39,5 @@ export type DashboardViewModel = {
   responseRate: number;
   eligibleApplicationCount: number;
   recentApplications: readonly DashboardRecentApplication[];
+  upcomingDeadlines: readonly DashboardUpcomingDeadline[];
 };

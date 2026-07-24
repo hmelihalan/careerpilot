@@ -1,7 +1,10 @@
 import {
+  Bookmark,
   BriefcaseBusiness,
   CalendarCheck2,
-  Percent,
+  ClipboardCheck,
+  CircleX,
+  Send,
   Sparkles,
   Trophy,
 } from "lucide-react";
@@ -10,6 +13,7 @@ import { AiRecommendation } from "@/src/components/dashboard/ai-recommendation";
 import { MetricCard } from "@/src/components/dashboard/metric-card";
 import { PipelinePreview } from "@/src/components/dashboard/pipeline-preview";
 import { RecentApplications } from "@/src/components/dashboard/recent-applications";
+import { UpcomingDeadlines } from "@/src/components/dashboard/upcoming-deadlines";
 import { UpcomingInterview } from "@/src/components/dashboard/upcoming-interview";
 import { DemoModeNotice } from "@/src/components/shared/demo-mode-notice";
 import { appRoutes } from "@/src/constants/navigation";
@@ -59,34 +63,62 @@ export function DashboardPageContent(props: DashboardPageContentProps) {
     ? appRoutes.demo.applications
     : appRoutes.authenticated.applications;
   const metrics = demoMode
-    ? demoMetrics
+    ? demoMetrics.map((metric) => ({ ...metric, href: applicationsPath }))
     : [
         {
           label: "Total Applications",
           value: props.dashboard.statusCounts.total.toString(),
           trend: "Across all tracked statuses",
           icon: BriefcaseBusiness,
+          href: applicationsPath,
           unchanged: true,
         },
         {
-          label: "Interviews",
+          label: "Wishlist",
+          value: props.dashboard.statusCounts.wishlist.toString(),
+          trend: "Saved opportunities",
+          icon: Bookmark,
+          href: `${applicationsPath}?status=WISHLIST`,
+          unchanged: true,
+        },
+        {
+          label: "Applied",
+          value: props.dashboard.statusCounts.applied.toString(),
+          trend: "Awaiting a response",
+          icon: Send,
+          href: `${applicationsPath}?status=APPLIED`,
+          unchanged: true,
+        },
+        {
+          label: "OA",
+          value: props.dashboard.statusCounts.assessment.toString(),
+          trend: "Online assessments",
+          icon: ClipboardCheck,
+          href: `${applicationsPath}?status=ASSESSMENT`,
+          unchanged: true,
+        },
+        {
+          label: "Interview",
           value: props.dashboard.statusCounts.interview.toString(),
-          trend: "Currently in the interview stage",
+          trend: "In the interview stage",
           icon: CalendarCheck2,
+          href: `${applicationsPath}?status=INTERVIEW`,
           unchanged: true,
         },
         {
-          label: "Offers",
+          label: "Offer",
           value: props.dashboard.statusCounts.offer.toString(),
           trend: "Current offers",
           icon: Trophy,
+          href: `${applicationsPath}?status=OFFER`,
           unchanged: true,
         },
         {
-          label: "Response Rate",
-          value: `${props.dashboard.responseRate}%`,
-          trend: `${props.dashboard.eligibleApplicationCount} eligible applications`,
-          icon: Percent,
+          label: "Rejected",
+          value: props.dashboard.statusCounts.rejected.toString(),
+          trend: "Closed opportunities",
+          icon: CircleX,
+          href: `${applicationsPath}?status=REJECTED`,
           unchanged: true,
         },
       ];
@@ -109,7 +141,7 @@ export function DashboardPageContent(props: DashboardPageContentProps) {
 
       <section
         aria-label="Job search metrics"
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7"
       >
         {metrics.map((metric) => (
           <MetricCard key={metric.label} {...metric} />
@@ -145,10 +177,21 @@ export function DashboardPageContent(props: DashboardPageContentProps) {
       {demoMode ? (
         <RecentApplications mode="demo" applicationsPath={applicationsPath} />
       ) : (
-        <RecentApplications
-          applicationsPath={applicationsPath}
-          applications={props.dashboard.recentApplications}
-        />
+        <section
+          aria-label="Application activity and deadlines"
+          className="grid items-start gap-3 xl:grid-cols-3"
+        >
+          <div className="min-w-0 xl:col-span-2">
+            <RecentApplications
+              applicationsPath={applicationsPath}
+              applications={props.dashboard.recentApplications}
+            />
+          </div>
+          <UpcomingDeadlines
+            applicationsPath={applicationsPath}
+            deadlines={props.dashboard.upcomingDeadlines}
+          />
+        </section>
       )}
     </div>
   );

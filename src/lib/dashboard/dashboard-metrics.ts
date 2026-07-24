@@ -1,10 +1,6 @@
-export type DashboardMetricStatus =
-  | "WISHLIST"
-  | "APPLIED"
-  | "ASSESSMENT"
-  | "INTERVIEW"
-  | "OFFER"
-  | "REJECTED";
+import { ApplicationStatus } from "../../generated/prisma/enums";
+
+export type DashboardMetricStatus = ApplicationStatus;
 
 export type DashboardStatusCount = {
   status: DashboardMetricStatus;
@@ -29,12 +25,12 @@ export function calculateDashboardMetrics(
   statusGroups: readonly DashboardStatusCount[],
 ): DashboardMetrics {
   const counts: Record<DashboardMetricStatus, number> = {
-    WISHLIST: 0,
-    APPLIED: 0,
-    ASSESSMENT: 0,
-    INTERVIEW: 0,
-    OFFER: 0,
-    REJECTED: 0,
+    [ApplicationStatus.WISHLIST]: 0,
+    [ApplicationStatus.APPLIED]: 0,
+    [ApplicationStatus.ASSESSMENT]: 0,
+    [ApplicationStatus.INTERVIEW]: 0,
+    [ApplicationStatus.OFFER]: 0,
+    [ApplicationStatus.REJECTED]: 0,
   };
 
   statusGroups.forEach(({ status, count }) => {

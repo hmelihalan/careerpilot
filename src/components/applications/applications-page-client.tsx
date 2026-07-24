@@ -16,7 +16,10 @@ import { KanbanBoard } from "@/src/components/applications/kanban-board";
 import { DemoModeNotice } from "@/src/components/shared/demo-mode-notice";
 import { appRoutes } from "@/src/constants/navigation";
 import { mockApplications } from "@/src/constants/mock-applications";
-import type { ApplicationListItem } from "@/src/types/application";
+import type {
+  ApplicationListItem,
+  ApplicationStatus,
+} from "@/src/types/application";
 
 function countActiveFilters(filters: ApplicationsFilters): number {
   return [
@@ -31,10 +34,12 @@ type ApplicationsPageClientProps =
   | {
       mode?: "authenticated";
       applications: readonly ApplicationListItem[];
+      initialStatus: ApplicationStatus | "All";
     }
   | {
       mode: "demo";
       applications?: never;
+      initialStatus?: never;
     };
 
 export function ApplicationsPageClient(props: ApplicationsPageClientProps) {
@@ -44,9 +49,10 @@ export function ApplicationsPageClient(props: ApplicationsPageClientProps) {
   const applicationsPath = appRoutes[mode].applications;
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<ApplicationsView>("board");
-  const [filters, setFilters] = useState<ApplicationsFilters>(
-    EMPTY_APPLICATION_FILTERS,
-  );
+  const [filters, setFilters] = useState<ApplicationsFilters>(() => ({
+    ...EMPTY_APPLICATION_FILTERS,
+    status: props.mode === "demo" ? "All" : props.initialStatus,
+  }));
 
   const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase();
   const activeFilterCount = countActiveFilters(filters);

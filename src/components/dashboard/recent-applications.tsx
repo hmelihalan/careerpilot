@@ -116,7 +116,7 @@ export function RecentApplications(props: RecentApplicationsProps) {
           </div>
         ) : props.applications.length > 0 ? (
           <div className="scrollbar-thin -mx-4 overflow-x-auto sm:-mx-6">
-            <table className="w-full min-w-170 text-left text-xs">
+            <table className="w-full min-w-245 text-left text-xs">
               <thead>
                 <tr className="border-y bg-slate-50/80 text-[11px] font-medium uppercase tracking-wide text-slate-500">
                   <th scope="col" className="px-4 py-2 first:pl-4 sm:first:pl-6">
@@ -125,6 +125,8 @@ export function RecentApplications(props: RecentApplicationsProps) {
                   <th scope="col" className="px-4 py-2">Role</th>
                   <th scope="col" className="px-4 py-2">Status</th>
                   <th scope="col" className="px-4 py-2">Location</th>
+                  <th scope="col" className="px-4 py-2">Salary</th>
+                  <th scope="col" className="px-4 py-2">Applied</th>
                   <th scope="col" className="px-4 py-2 last:pr-4 sm:last:pr-6">
                     Updated
                   </th>
@@ -166,9 +168,15 @@ export function RecentApplications(props: RecentApplicationsProps) {
                       </Badge>
                     </td>
                     <td className="max-w-48 truncate px-4 py-2.5 text-slate-500">
-                      {application.location}
+                      {application.location ?? "—"}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-500 last:pr-4 sm:last:pr-6">
+                    <td className="whitespace-nowrap px-4 py-2.5 text-slate-500">
+                      {application.salary ?? "—"}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-slate-500">
+                      {application.appliedAt ?? "—"}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-slate-500 last:pr-4 sm:last:pr-6">
                       {application.updatedAt}
                     </td>
                   </tr>
