@@ -62,9 +62,11 @@ A relation has `type="relation"`, `id`, `from_id`, `to_id`, `direction`, a
 single-item `labels` array, optional `score`, and `meta`.
 
 The observed source does not contain a separate checked-in label schema. The
-merger therefore derives the allowed span labels and relation types from the
-union of all three input splits and reports those allowed values. Existing
-nested/overlapping spans are permitted; exact duplicate spans are not.
+repository audit found 77 span labels and nine relation types; those discovered
+values are frozen in the merger and included in every report. They are not
+re-derived at runtime, so labels found only in validation/test cannot authorize
+new training annotations. Existing nested/overlapping spans are permitted;
+exact duplicate spans are not.
 
 ## Required review patch schema
 
@@ -81,7 +83,7 @@ metadata only and is never used for matching.
   "add_spans": [
     {
       "id": "temporary-review-id",
-      "label": "SKILL",
+      "label": "TECHNICAL_SKILL",
       "start": 18,
       "end": 21,
       "exact_text": "SQL",
@@ -137,11 +139,15 @@ Relation additions require an observed relation type, live source and target
 span endpoints after all span mutations, distinct endpoints, no duplicate
 relation, and an optional confidence in `[0, 1]`. A temporary ID on an accepted
 span addition may be referenced by a relation addition in the same review; it
-is mapped to the generated stable ID.
+is mapped to the generated stable ID. Temporary IDs must be unique in the patch
+and must not collide with a live span ID. Ambiguous IDs and endpoints are
+rejected rather than resolved by last-write-wins behavior.
 
 Deleting a span also removes existing relations that would otherwise dangle.
 These deterministic cleanups are included in per-document status records and
-aggregate cleanup counts. Unknown delete IDs and missing relation endpoints are
+aggregate cleanup counts. If the patch also explicitly deletes the same
+relation, that requested deletion is accepted as already satisfied by cleanup.
+Unknown or ambiguous delete IDs and missing relation endpoints are
 operation-level rejections.
 
 Stable span and relation IDs are SHA-256-derived from the document ID and
@@ -189,12 +195,13 @@ training ID set is checked against validation and test IDs.
 Normalized resume text is used only for leakage detection:
 
 ```text
-casefold(" ".join(text.split()))
+casefold(" ".join(NFKC(text).split()))
 ```
 
-Cross-split normalized-text duplicates are reported with a SHA-256 digest and
-the affected split/document IDs. They are never silently deleted. Non-strict
-mode produces outputs but marks split integrity as failed; strict mode stops.
+Cross-split normalized-text duplicates, including empty/whitespace-only texts,
+are reported with a SHA-256 digest and the affected split/document IDs. They
+are never silently deleted. Non-strict mode produces outputs but marks split
+integrity as failed; strict mode stops.
 
 ## CLI
 
@@ -239,19 +246,21 @@ python -m ml.resume_analysis.apply_ollama_reviews `
 
 Dry-run parses and validates all inputs, simulates every operation, and writes
 only `review_merge_report.json`. It does not write reviewed, clean, rejection,
-or status JSONL files.
+or status JSONL files. To prevent a dry-run report from appearing beside stale
+datasets, the output directory must not already contain merge dataset files.
 
 ### Strict mode
 
 `--strict` additionally fails if a review has no matching split document or if
-normalized text is duplicated across splits. Invalid JSON, missing required
-fields, duplicate document IDs, ambiguous discovery, and malformed structural
-fields always fail, regardless of strict mode. Individual bad review operations
-remain operation-level rejections.
+normalized text is duplicated across splits. Invalid JSON (including `NaN` and
+infinite numeric constants), missing required fields, duplicate document IDs,
+ambiguous discovery, and malformed structural fields always fail, regardless
+of strict mode. Individual bad review operations remain operation-level
+rejections.
 
 ## Outputs
 
-A non-dry run writes atomically:
+A non-dry run writes each file atomically:
 
 ```text
 reviewed/
@@ -269,16 +278,17 @@ reviewed/
 JSON object keys and aggregate map keys are sorted. Document order follows the
 original split order; operation audit order follows review and operation order.
 The report contains input SHA-256 hashes so raw-file immutability can be checked
-after the merge.
+after the merge. For non-dry runs it is published last and acts as the run
+completion marker; a failed/interrupted publication leaves no new report.
 
 ## Known limitations and current input state
 
 - There is no active resume annotation/audit implementation on the current Git
   branch. Historical code provided deterministic JSONL/atomic-write patterns,
   but no Label Studio or review-patch schema to import directly.
-- Allowed labels and relation types are inferred from the three inputs. A valid
-  schema value absent from every split needs a future explicit schema file
-  before it can be accepted.
+- Allowed labels and relation types are frozen from the inspected dataset. A
+  valid new schema value needs a reviewed versioned schema update before it can
+  be accepted.
 - Overlaps are allowed because the observed data contains nested section and
   entity spans and no stricter overlap policy exists in the repository.
 - Exact offsets are required. Ambiguous or unresolved text is never searched or
