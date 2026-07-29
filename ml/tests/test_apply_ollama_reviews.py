@@ -8,6 +8,7 @@ import pytest
 
 from ml.resume_analysis.apply_ollama_reviews import (
     ReviewMergeError,
+    document_id,
     find_cross_split_text_duplicates,
     merge_datasets,
     run_pipeline,
@@ -189,7 +190,9 @@ def test_valid_relation_addition() -> None:
     ]
     assert len(relations) == 2
     assert str(relations[-1]["id"]).startswith("ollama_relation_")
-    assert relations[-1]["meta"]["provenance"] == "ollama_review"
+    relation_meta = relations[-1]["meta"]
+    assert isinstance(relation_meta, dict)
+    assert relation_meta["provenance"] == "ollama_review"
 
 
 def test_relation_with_missing_endpoint_is_rejected() -> None:
@@ -385,9 +388,7 @@ def test_reapplying_same_patch_is_logically_idempotent() -> None:
         ],
     )
     first = merge_datasets(splits(task("doc-1")), [review])
-    second = merge_datasets(
-        splits(copy.deepcopy(first.reviewed["train"][0])), [review]
-    )
+    second = merge_datasets(splits(copy.deepcopy(first.reviewed["train"][0])), [review])
 
     assert second.reviewed == first.reviewed
     ids = [result["id"] for result in results_for(second.reviewed["train"][0])]
@@ -467,7 +468,9 @@ def test_output_ordering_is_byte_deterministic(tmp_path: Path) -> None:
         "document_review_status.jsonl",
         "review_merge_report.json",
     ):
-        assert (output_one / filename).read_bytes() == (output_two / filename).read_bytes()
+        assert (output_one / filename).read_bytes() == (
+            output_two / filename
+        ).read_bytes()
 
 
 def test_final_document_validation_failure_is_excluded_from_clean_output() -> None:
@@ -494,13 +497,14 @@ def test_split_membership_is_preserved() -> None:
     artifacts = merge_datasets(original, [])
 
     for split_name in ("train", "validation", "test"):
-        original_ids = [item["data"]["document_id"] for item in original[split_name]]
-        reviewed_ids = [
-            item["data"]["document_id"] for item in artifacts.reviewed[split_name]
-        ]
+        original_ids = [document_id(item) for item in original[split_name]]
+        reviewed_ids = [document_id(item) for item in artifacts.reviewed[split_name]]
         assert reviewed_ids == original_ids
     assert artifacts.report["split_integrity"]["membership_unchanged"] is True
-    assert artifacts.report["split_integrity"]["training_excludes_validation_and_test"] is True
+    assert (
+        artifacts.report["split_integrity"]["training_excludes_validation_and_test"]
+        is True
+    )
 
 
 def test_dry_run_writes_only_report(tmp_path: Path) -> None:
