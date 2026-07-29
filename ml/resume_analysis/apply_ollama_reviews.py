@@ -12,12 +12,12 @@ import copy
 import hashlib
 import json
 import os
-import re
 import sys
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 JsonObject = dict[str, Any]
 SplitDocuments = dict[str, list[JsonObject]]
@@ -87,12 +87,15 @@ class ReviewOutcome:
 def _stable_json(value: Any, *, pretty: bool = False) -> str:
     if pretty:
         return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    return json.dumps(
-        value,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        sort_keys=True,
-    ) + "\n"
+    return (
+        json.dumps(
+            value,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        + "\n"
+    )
 
 
 def _counter_dict(counter: Mapping[str, int]) -> dict[str, int]:
@@ -197,8 +200,7 @@ def _choose_discovered_file(kind: str, candidates: Sequence[Path]) -> Path:
             for path in candidates
             if "ollama" in path.stem.casefold()
             and (
-                "review" in path.stem.casefold()
-                or "validated" in path.stem.casefold()
+                "review" in path.stem.casefold() or "validated" in path.stem.casefold()
             )
         ]
 
@@ -262,17 +264,13 @@ def document_text(document: Mapping[str, Any], location: str = "document") -> st
 def _annotation_results(document: JsonObject, location: str) -> list[JsonObject]:
     predictions = document.get("predictions")
     if not isinstance(predictions, list) or len(predictions) != 1:
-        raise ReviewMergeError(
-            f"{location} must contain exactly one predictions entry"
-        )
+        raise ReviewMergeError(f"{location} must contain exactly one predictions entry")
     prediction = predictions[0]
     if not isinstance(prediction, dict):
         raise ReviewMergeError(f"{location}.predictions[0] must be an object")
     results = prediction.get("result")
     if not isinstance(results, list):
-        raise ReviewMergeError(
-            f"{location}.predictions[0].result must be an array"
-        )
+        raise ReviewMergeError(f"{location}.predictions[0].result must be an array")
     if any(not isinstance(result, dict) for result in results):
         raise ReviewMergeError(
             f"{location}.predictions[0].result entries must be objects"
@@ -280,7 +278,9 @@ def _annotation_results(document: JsonObject, location: str) -> list[JsonObject]
     return results
 
 
-def _review_operations(review: Mapping[str, Any], location: str) -> dict[str, list[Any]]:
+def _review_operations(
+    review: Mapping[str, Any], location: str
+) -> dict[str, list[Any]]:
     review_id = _as_nonempty_string(review.get("document_id"))
     if review_id is None:
         if isinstance(review.get("data"), dict) and "predictions" in review:
@@ -324,8 +324,7 @@ def validate_input_structure(
         {
             "document_id": value,
             "locations": [
-                {"split": split, "index": position}
-                for split, position in locations
+                {"split": split, "index": position} for split, position in locations
             ],
         }
         for value, locations in sorted(locations_by_id.items())
@@ -467,7 +466,7 @@ def _first_string(payload: Mapping[str, Any], keys: Iterable[str]) -> str | None
 
 
 def _stable_span_id(document_id_value: str, label: str, start: int, end: int) -> str:
-    material = f"{document_id_value}\0{label}\0{start}\0{end}".encode("utf-8")
+    material = f"{document_id_value}\0{label}\0{start}\0{end}".encode()
     return "ollama_span_" + hashlib.sha256(material).hexdigest()[:24]
 
 
@@ -476,7 +475,7 @@ def _stable_relation_id(
 ) -> str:
     material = (
         f"{document_id_value}\0{relation_type}\0{source_id}\0{target_id}"
-    ).encode("utf-8")
+    ).encode()
     return "ollama_relation_" + hashlib.sha256(material).hexdigest()[:24]
 
 
@@ -648,9 +647,13 @@ def _apply_review(
 
         if not reason and (start is None or end is None):
             reason = "missing_offsets"
-        elif not reason and (not _is_integer(start) or not _is_integer(end)):
-            reason = "invalid_offsets"
-        elif not reason and not (0 <= start < end <= len(text)):
+        elif not reason and (
+            not isinstance(start, int)
+            or isinstance(start, bool)
+            or not isinstance(end, int)
+            or isinstance(end, bool)
+            or not (0 <= start < end <= len(text))
+        ):
             reason = "invalid_offsets"
         elif not reason and (not isinstance(exact_text, str) or not exact_text.strip()):
             reason = "empty_exact_text"
@@ -765,12 +768,8 @@ def _apply_review(
             continue
 
         relation_type = _operation_relation_type(payload)
-        source_id = _first_string(
-            payload, ("source_id", "source_span_id", "from_id")
-        )
-        target_id = _first_string(
-            payload, ("target_id", "target_span_id", "to_id")
-        )
+        source_id = _first_string(payload, ("source_id", "source_span_id", "from_id"))
+        target_id = _first_string(payload, ("target_id", "target_span_id", "to_id"))
         source_id = proposed_span_ids.get(source_id, source_id) if source_id else None
         target_id = proposed_span_ids.get(target_id, target_id) if target_id else None
         confidence, confidence_error = _confidence(payload)
@@ -865,17 +864,23 @@ def validate_document(
     try:
         identifier = document_id(document)
     except ReviewMergeError as error:
-        errors.append(_validation_error("invalid_document_id", "data.document_id", str(error)))
+        errors.append(
+            _validation_error("invalid_document_id", "data.document_id", str(error))
+        )
         identifier = ""
     try:
         text = document_text(document)
     except ReviewMergeError as error:
-        errors.append(_validation_error("invalid_document_text", "data.text", str(error)))
+        errors.append(
+            _validation_error("invalid_document_text", "data.text", str(error))
+        )
         text = ""
     try:
         results = _annotation_results(document, f"document[{identifier}]")
     except ReviewMergeError as error:
-        errors.append(_validation_error("invalid_annotations", "predictions", str(error)))
+        errors.append(
+            _validation_error("invalid_annotations", "predictions", str(error))
+        )
         return errors
 
     span_ids: set[str] = set()
@@ -890,43 +895,113 @@ def validate_document(
         result_id = _as_nonempty_string(result.get("id"))
         if result_type == "labels":
             if result_id is None:
-                errors.append(_validation_error("invalid_span_id", location + ".id", "Span ID must be a non-empty string"))
+                errors.append(
+                    _validation_error(
+                        "invalid_span_id",
+                        location + ".id",
+                        "Span ID must be a non-empty string",
+                    )
+                )
             elif result_id in span_ids:
-                errors.append(_validation_error("duplicate_span_id", location + ".id", f"Duplicate span ID: {result_id}"))
+                errors.append(
+                    _validation_error(
+                        "duplicate_span_id",
+                        location + ".id",
+                        f"Duplicate span ID: {result_id}",
+                    )
+                )
             else:
                 span_ids.add(result_id)
 
             value = result.get("value")
             if not isinstance(value, dict):
-                errors.append(_validation_error("invalid_span_value", location + ".value", "Span value must be an object"))
+                errors.append(
+                    _validation_error(
+                        "invalid_span_value",
+                        location + ".value",
+                        "Span value must be an object",
+                    )
+                )
                 continue
             start, end = value.get("start"), value.get("end")
             span_text = value.get("text")
             label = _span_label(result)
             if label is None or label not in allowed_labels:
-                errors.append(_validation_error("unknown_label", location + ".value.labels", f"Unknown or malformed label: {label}"))
-            if not _is_integer(start) or not _is_integer(end) or not (0 <= start < end <= len(text)):
-                errors.append(_validation_error("invalid_offsets", location + ".value", f"Invalid offsets: {start}, {end}"))
+                errors.append(
+                    _validation_error(
+                        "unknown_label",
+                        location + ".value.labels",
+                        f"Unknown or malformed label: {label}",
+                    )
+                )
+            if (
+                not isinstance(start, int)
+                or isinstance(start, bool)
+                or not isinstance(end, int)
+                or isinstance(end, bool)
+                or not (0 <= start < end <= len(text))
+            ):
+                errors.append(
+                    _validation_error(
+                        "invalid_offsets",
+                        location + ".value",
+                        f"Invalid offsets: {start}, {end}",
+                    )
+                )
                 continue
             if not isinstance(span_text, str) or not span_text.strip():
-                errors.append(_validation_error("empty_span", location + ".value.text", "Span text must not be empty or whitespace-only"))
+                errors.append(
+                    _validation_error(
+                        "empty_span",
+                        location + ".value.text",
+                        "Span text must not be empty or whitespace-only",
+                    )
+                )
             elif text[start:end] != span_text:
-                errors.append(_validation_error("span_text_mismatch", location + ".value.text", "Span text does not match data.text at its offsets"))
+                errors.append(
+                    _validation_error(
+                        "span_text_mismatch",
+                        location + ".value.text",
+                        "Span text does not match data.text at its offsets",
+                    )
+                )
             if label is not None:
                 key = (label, start, end)
                 if key in span_keys:
-                    errors.append(_validation_error("duplicate_span", location, f"Duplicate span: {key}"))
+                    errors.append(
+                        _validation_error(
+                            "duplicate_span", location, f"Duplicate span: {key}"
+                        )
+                    )
                 span_keys.add(key)
         elif result_type == "relation":
             if result_id is None:
-                errors.append(_validation_error("invalid_relation_id", location + ".id", "Relation ID must be a non-empty string"))
+                errors.append(
+                    _validation_error(
+                        "invalid_relation_id",
+                        location + ".id",
+                        "Relation ID must be a non-empty string",
+                    )
+                )
             elif result_id in relation_ids:
-                errors.append(_validation_error("duplicate_relation_id", location + ".id", f"Duplicate relation ID: {result_id}"))
+                errors.append(
+                    _validation_error(
+                        "duplicate_relation_id",
+                        location + ".id",
+                        f"Duplicate relation ID: {result_id}",
+                    )
+                )
             else:
                 relation_ids.add(result_id)
             relations.append((index, result))
         else:
-            errors.append(_validation_error("unknown_annotation_type", location + ".type", f"Unsupported result type: {result_type}"))
+            errors.append(
+                _validation_error(
+                    "unknown_annotation_type",
+                    location + ".type",
+                    f"Unsupported result type: {result_type}",
+                )
+            )
 
         score = result.get("score")
         if score is not None and (
@@ -934,7 +1009,13 @@ def validate_document(
             or not isinstance(score, (int, float))
             or not 0.0 <= float(score) <= 1.0
         ):
-            errors.append(_validation_error("invalid_confidence", location + ".score", f"Invalid confidence: {score}"))
+            errors.append(
+                _validation_error(
+                    "invalid_confidence",
+                    location + ".score",
+                    f"Invalid confidence: {score}",
+                )
+            )
 
     for index, relation in relations:
         location = f"predictions[0].result[{index}]"
@@ -942,17 +1023,45 @@ def validate_document(
         source_id = _as_nonempty_string(relation.get("from_id"))
         target_id = _as_nonempty_string(relation.get("to_id"))
         if relation_type is None or relation_type not in allowed_relation_types:
-            errors.append(_validation_error("unknown_relation_type", location + ".labels", f"Unknown or malformed relation type: {relation_type}"))
+            errors.append(
+                _validation_error(
+                    "unknown_relation_type",
+                    location + ".labels",
+                    f"Unknown or malformed relation type: {relation_type}",
+                )
+            )
         if source_id is None or source_id not in span_ids:
-            errors.append(_validation_error("missing_source_endpoint", location + ".from_id", f"Missing source span: {source_id}"))
+            errors.append(
+                _validation_error(
+                    "missing_source_endpoint",
+                    location + ".from_id",
+                    f"Missing source span: {source_id}",
+                )
+            )
         if target_id is None or target_id not in span_ids:
-            errors.append(_validation_error("missing_target_endpoint", location + ".to_id", f"Missing target span: {target_id}"))
+            errors.append(
+                _validation_error(
+                    "missing_target_endpoint",
+                    location + ".to_id",
+                    f"Missing target span: {target_id}",
+                )
+            )
         if source_id is not None and source_id == target_id:
-            errors.append(_validation_error("self_relation_not_allowed", location, "Self-relations are not allowed by the observed schema"))
+            errors.append(
+                _validation_error(
+                    "self_relation_not_allowed",
+                    location,
+                    "Self-relations are not allowed by the observed schema",
+                )
+            )
         if relation_type and source_id and target_id:
             key = (relation_type, source_id, target_id)
             if key in relation_keys:
-                errors.append(_validation_error("duplicate_relation", location, f"Duplicate relation: {key}"))
+                errors.append(
+                    _validation_error(
+                        "duplicate_relation", location, f"Duplicate relation: {key}"
+                    )
+                )
             relation_keys.add(key)
 
     return errors
@@ -968,7 +1077,9 @@ def _annotation_counts(documents: Sequence[JsonObject]) -> dict[str, int]:
     return {"relations": relations, "spans": spans}
 
 
-def _distributions(documents: Sequence[JsonObject]) -> tuple[Counter[str], Counter[str]]:
+def _distributions(
+    documents: Sequence[JsonObject],
+) -> tuple[Counter[str], Counter[str]]:
     labels: Counter[str] = Counter()
     relations: Counter[str] = Counter()
     for position, document in enumerate(documents):
@@ -1078,9 +1189,17 @@ def merge_datasets(
                     "rejection_reasons": _counter_dict(outcome.rejection_reasons),
                     "requested_operation_counts": _counter_dict(outcome.requested),
                     "requested_operations": requested_count,
-                    "review_complete": review.get("review_complete") if review else None,
-                    "review_unresolved_reason_codes": review.get("unresolved_reason_codes", []) if review else [],
-                    "review_validation_errors": review.get("validation_errors", []) if review else [],
+                    "review_complete": review.get("review_complete")
+                    if review
+                    else None,
+                    "review_unresolved_reason_codes": review.get(
+                        "unresolved_reason_codes", []
+                    )
+                    if review
+                    else [],
+                    "review_validation_errors": review.get("validation_errors", [])
+                    if review
+                    else [],
                     "source_index": review.get("source_index") if review else None,
                     "split": split,
                     "status": status,
@@ -1134,10 +1253,14 @@ def merge_datasets(
                 "rejected_operation_counts": _counter_dict(unmatched_outcome.rejected),
                 "rejected_operations": _sum_counter(unmatched_outcome.rejected),
                 "rejection_reasons": _counter_dict(unmatched_outcome.rejection_reasons),
-                "requested_operation_counts": _counter_dict(unmatched_outcome.requested),
+                "requested_operation_counts": _counter_dict(
+                    unmatched_outcome.requested
+                ),
                 "requested_operations": requested_count,
                 "review_complete": review.get("review_complete"),
-                "review_unresolved_reason_codes": review.get("unresolved_reason_codes", []),
+                "review_unresolved_reason_codes": review.get(
+                    "unresolved_reason_codes", []
+                ),
                 "review_validation_errors": review.get("validation_errors", []),
                 "source_index": review.get("source_index"),
                 "split": None,
@@ -1172,12 +1295,8 @@ def merge_datasets(
     reviews_by_split = Counter(
         split for review_id, (split, _) in index.items() if review_id in reviews_by_id
     )
-    before_counts = {
-        split: _annotation_counts(splits[split]) for split in SPLIT_NAMES
-    }
-    after_counts = {
-        split: _annotation_counts(reviewed[split]) for split in SPLIT_NAMES
-    }
+    before_counts = {split: _annotation_counts(splits[split]) for split in SPLIT_NAMES}
+    after_counts = {split: _annotation_counts(reviewed[split]) for split in SPLIT_NAMES}
     label_distribution: dict[str, dict[str, int]] = {}
     relation_distribution: dict[str, dict[str, int]] = {}
     for split in SPLIT_NAMES:
@@ -1199,9 +1318,13 @@ def merge_datasets(
             for split in SPLIT_NAMES
         },
         "applied_operation_counts": _counter_dict(counters.applied),
-        "automatic_relation_cleanup_counts_by_type": _counter_dict(counters.cleanup_relations_by_type),
+        "automatic_relation_cleanup_counts_by_type": _counter_dict(
+            counters.cleanup_relations_by_type
+        ),
         "cross_split_normalized_text_duplicates": text_duplicates,
-        "deleted_relation_counts_by_type": _counter_dict(counters.deleted_relations_by_type),
+        "deleted_relation_counts_by_type": _counter_dict(
+            counters.deleted_relations_by_type
+        ),
         "deleted_span_counts_by_label": _counter_dict(counters.deleted_spans_by_label),
         "document_status_counts": _counter_dict(status_counts),
         "documents_fully_applied": status_counts["fully_applied"],
@@ -1214,7 +1337,9 @@ def merge_datasets(
             split: len(splits[split]) for split in SPLIT_NAMES
         },
         "input_sha256": input_hashes,
-        "invalid_base_documents": sum(bool(errors) for errors in base_errors_by_id.values()),
+        "invalid_base_documents": sum(
+            bool(errors) for errors in base_errors_by_id.values()
+        ),
         "invalid_base_documents_by_split": {
             split: sum(
                 bool(base_errors_by_id[document_id(document)])
@@ -1222,7 +1347,9 @@ def merge_datasets(
             )
             for split in SPLIT_NAMES
         },
-        "invalid_final_documents": sum(bool(errors) for errors in final_errors_by_id.values()),
+        "invalid_final_documents": sum(
+            bool(errors) for errors in final_errors_by_id.values()
+        ),
         "invalid_final_documents_by_split": {
             split: len(reviewed[split]) - len(clean[split]) for split in SPLIT_NAMES
         },
@@ -1242,13 +1369,17 @@ def merge_datasets(
             "cross_split_document_ids_absent": training_excludes_eval,
             "cross_split_normalized_text_duplicates_absent": not text_duplicates,
             "membership_unchanged": membership_unchanged,
-            "passed": membership_unchanged and training_excludes_eval and not text_duplicates,
+            "passed": membership_unchanged
+            and training_excludes_eval
+            and not text_duplicates,
             "training_excludes_validation_and_test": training_excludes_eval,
         },
         "unmatched_review_count": len(unmatched_ids),
         "unmatched_review_document_ids": unmatched_ids,
         "added_span_counts_by_label": _counter_dict(counters.added_spans_by_label),
-        "added_relation_counts_by_type": _counter_dict(counters.added_relations_by_type),
+        "added_relation_counts_by_type": _counter_dict(
+            counters.added_relations_by_type
+        ),
     }
     return MergeArtifacts(reviewed, clean, rejections, statuses, report)
 
@@ -1279,9 +1410,7 @@ def write_outputs(
     if dry_run:
         return
     for split in SPLIT_NAMES:
-        _write_jsonl(
-            output_dir / f"{split}_reviewed.jsonl", artifacts.reviewed[split]
-        )
+        _write_jsonl(output_dir / f"{split}_reviewed.jsonl", artifacts.reviewed[split])
         _write_jsonl(output_dir / f"{split}_clean.jsonl", artifacts.clean[split])
     _write_jsonl(
         output_dir / "rejected_review_operations.jsonl",
