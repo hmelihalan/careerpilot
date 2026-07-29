@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import sys
+import unicodedata
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -27,6 +28,100 @@ OPERATION_TYPES = (
     "add_spans",
     "delete_relation_ids",
     "add_relations",
+)
+OBSERVED_ALLOWED_LABELS = frozenset(
+    {
+        "ACCOUNTING_SKILL",
+        "ACCOUNTING_SOFTWARE",
+        "AFFILIATIONS",
+        "AFFILIATION_NAME",
+        "AWARDS",
+        "AWARD_NAME",
+        "CERTIFICATIONS",
+        "CERTIFICATION_BLOCK",
+        "CERTIFICATION_EXPIRY_DATE",
+        "CERTIFICATION_ISSUE_DATE",
+        "CERTIFICATION_ISSUER",
+        "CERTIFICATION_NAME",
+        "CLOUD_PLATFORM",
+        "COMPANY",
+        "CONTACT",
+        "CONTACT_LOCATION",
+        "COURSEWORK",
+        "CREDENTIAL_URL",
+        "DATABASE",
+        "DATA_SCIENCE_SKILL",
+        "DEGREE",
+        "DESIGN_TOOL",
+        "DEVOPS_TOOL",
+        "EDUCATION",
+        "EDUCATION_BLOCK",
+        "EDUCATION_END_DATE",
+        "EDUCATION_LOCATION",
+        "EDUCATION_START_DATE",
+        "EMAIL",
+        "EMPLOYMENT_TYPE",
+        "EXPERIENCE",
+        "EXPERIENCE_BLOCK",
+        "FIELD_OF_STUDY",
+        "FINANCE_SKILL",
+        "FRAMEWORK",
+        "GITHUB_URL",
+        "GPA",
+        "HONOR",
+        "INSTITUTION",
+        "JOB_TITLE",
+        "LANGUAGES",
+        "LANGUAGE_PROFICIENCY",
+        "LIBRARY",
+        "LINKEDIN_URL",
+        "MACHINE_LEARNING_SKILL",
+        "OFFICE_SOFTWARE",
+        "OTHER",
+        "OTHER_URL",
+        "PERSON_NAME",
+        "PHONE",
+        "PORTFOLIO_URL",
+        "PROGRAMMING_LANGUAGE",
+        "PROJECTS",
+        "PROJECT_BLOCK",
+        "PROJECT_DESCRIPTION",
+        "PROJECT_END_DATE",
+        "PROJECT_MANAGEMENT_TOOL",
+        "PROJECT_NAME",
+        "PROJECT_START_DATE",
+        "PROJECT_TECHNOLOGY",
+        "PUBLICATIONS",
+        "PUBLICATION_TITLE",
+        "REFERENCES",
+        "REFERENCE_ENTRY",
+        "SKILLS",
+        "SOFT_SKILL",
+        "SPOKEN_LANGUAGE",
+        "SUMMARY",
+        "SUMMARY_TEXT",
+        "TECHNICAL_SKILL",
+        "VOLUNTEERING",
+        "WORK_ACHIEVEMENT",
+        "WORK_DATE_RANGE",
+        "WORK_DESCRIPTION",
+        "WORK_END_DATE",
+        "WORK_LOCATION",
+        "WORK_START_DATE",
+    }
+)
+OBSERVED_ALLOWED_RELATION_TYPES = frozenset(
+    {
+        "AWARDED_BY",
+        "BELONGS_TO",
+        "HAS_END_DATE",
+        "HAS_FIELD",
+        "HAS_LOCATION",
+        "HAS_PROFICIENCY",
+        "HAS_START_DATE",
+        "ISSUED_BY",
+        "USES",
+    }
 )
 OUTPUT_FILENAMES = {
     "train_reviewed.jsonl",
@@ -86,10 +181,20 @@ class ReviewOutcome:
 
 def _stable_json(value: Any, *, pretty: bool = False) -> str:
     if pretty:
-        return json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+        return (
+            json.dumps(
+                value,
+                allow_nan=False,
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n"
+        )
     return (
         json.dumps(
             value,
+            allow_nan=False,
             ensure_ascii=False,
             separators=(",", ":"),
             sort_keys=True,
@@ -113,7 +218,14 @@ def _is_integer(value: Any) -> bool:
 def normalize_resume_text(text: str) -> str:
     """Normalize text only for leakage detection, never for offset matching."""
 
-    return " ".join(text.split()).casefold()
+    normalized = unicodedata.normalize("NFKC", text)
+    return " ".join(normalized.split()).casefold()
+
+
+def _reject_nonfinite_json_constant(value: str) -> None:
+    raise ReviewMergeError(
+        f"Non-standard JSON numeric constant is not allowed: {value}"
+    )
 
 
 def load_json_records(path: Path, *, kind: str) -> list[JsonObject]:
@@ -135,7 +247,9 @@ def load_json_records(path: Path, *, kind: str) -> list[JsonObject]:
             handle.seek(0)
 
             if first_character == "[":
-                parsed = json.load(handle)
+                parsed = json.load(
+                    handle, parse_constant=_reject_nonfinite_json_constant
+                )
                 if not isinstance(parsed, list):
                     raise ReviewMergeError(f"{kind} JSON root must be an array: {path}")
                 records = parsed
@@ -145,7 +259,12 @@ def load_json_records(path: Path, *, kind: str) -> list[JsonObject]:
                     if not line.strip():
                         continue
                     try:
-                        records.append(json.loads(line))
+                        records.append(
+                            json.loads(
+                                line,
+                                parse_constant=_reject_nonfinite_json_constant,
+                            )
+                        )
                     except json.JSONDecodeError as error:
                         raise ReviewMergeError(
                             f"Invalid JSON in {kind} file {path} at line "
@@ -356,14 +475,13 @@ def find_cross_split_text_duplicates(
         for position, document in enumerate(splits[split]):
             text = document_text(document, f"{split}[{position}]")
             normalized = normalize_resume_text(text)
-            if normalized:
-                occurrences[normalized].append(
-                    {
-                        "split": split,
-                        "document_id": document_id(document),
-                        "index": position,
-                    }
-                )
+            occurrences[normalized].append(
+                {
+                    "split": split,
+                    "document_id": document_id(document),
+                    "index": position,
+                }
+            )
 
     duplicates: list[JsonObject] = []
     for normalized, items in occurrences.items():
@@ -398,20 +516,15 @@ def _relation_type(result: Mapping[str, Any]) -> str | None:
 def derive_allowed_schema(
     splits: Mapping[str, Sequence[JsonObject]],
 ) -> tuple[set[str], set[str]]:
-    labels: set[str] = set()
-    relation_types: set[str] = set()
-    for split in SPLIT_NAMES:
-        for position, document in enumerate(splits[split]):
-            for result in _annotation_results(document, f"{split}[{position}]"):
-                if result.get("type") == "labels":
-                    label = _span_label(result)
-                    if label:
-                        labels.add(label)
-                elif result.get("type") == "relation":
-                    relation_type = _relation_type(result)
-                    if relation_type:
-                        relation_types.add(relation_type)
-    return labels, relation_types
+    """Return the frozen schema discovered during repository inspection.
+
+    The split argument is retained so callers have one schema-selection seam for
+    a future versioned schema file; evaluation annotations never authorize new
+    training labels at runtime.
+    """
+
+    del splits
+    return set(OBSERVED_ALLOWED_LABELS), set(OBSERVED_ALLOWED_RELATION_TYPES)
 
 
 def _confidence(payload: Mapping[str, Any]) -> tuple[float | None, str | None]:
@@ -540,20 +653,20 @@ def _accept(
     outcome.applied[operation_type] += 1
 
 
-def _result_maps(
+def _result_groups(
     results: Sequence[JsonObject],
-) -> tuple[dict[str, JsonObject], dict[str, JsonObject]]:
-    spans: dict[str, JsonObject] = {}
-    relations: dict[str, JsonObject] = {}
+) -> tuple[dict[str, list[JsonObject]], dict[str, list[JsonObject]]]:
+    spans: defaultdict[str, list[JsonObject]] = defaultdict(list)
+    relations: defaultdict[str, list[JsonObject]] = defaultdict(list)
     for result in results:
         result_id = result.get("id")
         if not isinstance(result_id, str):
             continue
         if result.get("type") == "labels":
-            spans[result_id] = result
+            spans[result_id].append(result)
         elif result.get("type") == "relation":
-            relations[result_id] = result
-    return spans, relations
+            relations[result_id].append(result)
+    return dict(spans), dict(relations)
 
 
 def _apply_review(
@@ -576,12 +689,26 @@ def _apply_review(
 
     text = document_text(document)
     results = _annotation_results(document, f"document[{review_id}]")
+    initial_span_groups, _ = _result_groups(results)
+    proposed_id_counts = Counter(
+        proposed_id
+        for payload in operations["add_spans"]
+        if isinstance(payload, dict)
+        if (proposed_id := _as_nonempty_string(payload.get("id")))
+    )
+    ambiguous_proposed_ids = {
+        proposed_id
+        for proposed_id, count in proposed_id_counts.items()
+        if count > 1 or proposed_id in initial_span_groups
+    }
     proposed_span_ids: dict[str, str] = {}
+    automatically_cleaned_relations: defaultdict[str, list[str]] = defaultdict(list)
 
     for operation_index, payload in enumerate(operations["delete_span_ids"]):
         span_id = payload if isinstance(payload, str) else None
-        spans, _ = _result_maps(results)
-        if span_id is None or span_id not in spans:
+        spans, _ = _result_groups(results)
+        matches = spans.get(span_id, []) if span_id is not None else []
+        if not matches:
             _reject(
                 rejections=rejections,
                 counters=counters,
@@ -594,8 +721,21 @@ def _apply_review(
                 reason="unknown_delete_span_id",
             )
             continue
+        if len(matches) > 1:
+            _reject(
+                rejections=rejections,
+                counters=counters,
+                outcome=outcome,
+                split=split,
+                review_id=review_id,
+                operation_type="delete_span_ids",
+                operation_index=operation_index,
+                payload=payload,
+                reason="ambiguous_delete_span_id",
+            )
+            continue
 
-        deleted = spans[span_id]
+        deleted = matches[0]
         results.remove(deleted)
         _accept(counters, outcome, "delete_span_ids")
         label = _span_label(deleted)
@@ -611,6 +751,9 @@ def _apply_review(
         for relation in dangling:
             results.remove(relation)
             relation_type = _relation_type(relation) or "unknown"
+            relation_id = _as_nonempty_string(relation.get("id"))
+            if relation_id:
+                automatically_cleaned_relations[relation_id].append(relation_type)
             counters.cleanup_relations_by_type[relation_type] += 1
             outcome.automatic_relation_cleanups.append(
                 {
@@ -635,8 +778,13 @@ def _apply_review(
             )
             continue
 
+        proposed_id = _as_nonempty_string(payload.get("id"))
         label = _operation_label(payload)
-        if label is None or label not in allowed_labels:
+        if proposed_id and proposed_id_counts[proposed_id] > 1:
+            reason = "duplicate_proposed_span_id"
+        elif proposed_id and proposed_id in initial_span_groups:
+            reason = "proposed_span_id_conflict"
+        elif label is None or label not in allowed_labels:
             reason = "unknown_label"
         else:
             reason = ""
@@ -662,7 +810,7 @@ def _apply_review(
         elif not reason and confidence_error:
             reason = confidence_error
 
-        spans, _ = _result_maps(results)
+        spans, _ = _result_groups(results)
         duplicate = False
         if not reason:
             duplicate = any(
@@ -670,7 +818,8 @@ def _apply_review(
                 and isinstance(span.get("value"), dict)
                 and span["value"].get("start") == start
                 and span["value"].get("end") == end
-                for span in spans.values()
+                for matching_spans in spans.values()
+                for span in matching_spans
             )
             if duplicate:
                 reason = "duplicate_span"
@@ -723,7 +872,6 @@ def _apply_review(
         if confidence is not None:
             result["score"] = confidence
         results.append(result)
-        proposed_id = _as_nonempty_string(payload.get("id"))
         if proposed_id:
             proposed_span_ids[proposed_id] = generated_id
         _accept(counters, outcome, "add_spans")
@@ -731,8 +879,31 @@ def _apply_review(
 
     for operation_index, payload in enumerate(operations["delete_relation_ids"]):
         relation_id = payload if isinstance(payload, str) else None
-        _, relations = _result_maps(results)
-        if relation_id is None or relation_id not in relations:
+        _, relations = _result_groups(results)
+        matches = relations.get(relation_id, []) if relation_id is not None else []
+        cleaned_types = (
+            automatically_cleaned_relations.get(relation_id, [])
+            if relation_id is not None
+            else []
+        )
+        if not matches and len(cleaned_types) == 1:
+            _accept(counters, outcome, "delete_relation_ids")
+            counters.deleted_relations_by_type[cleaned_types[0]] += 1
+            continue
+        if not matches and len(cleaned_types) > 1:
+            _reject(
+                rejections=rejections,
+                counters=counters,
+                outcome=outcome,
+                split=split,
+                review_id=review_id,
+                operation_type="delete_relation_ids",
+                operation_index=operation_index,
+                payload=payload,
+                reason="ambiguous_delete_relation_id",
+            )
+            continue
+        if not matches:
             _reject(
                 rejections=rejections,
                 counters=counters,
@@ -745,7 +916,20 @@ def _apply_review(
                 reason="unknown_delete_relation_id",
             )
             continue
-        deleted = relations[relation_id]
+        if len(matches) > 1:
+            _reject(
+                rejections=rejections,
+                counters=counters,
+                outcome=outcome,
+                split=split,
+                review_id=review_id,
+                operation_type="delete_relation_ids",
+                operation_index=operation_index,
+                payload=payload,
+                reason="ambiguous_delete_relation_id",
+            )
+            continue
+        deleted = matches[0]
         results.remove(deleted)
         _accept(counters, outcome, "delete_relation_ids")
         relation_type = _relation_type(deleted)
@@ -768,19 +952,39 @@ def _apply_review(
             continue
 
         relation_type = _operation_relation_type(payload)
-        source_id = _first_string(payload, ("source_id", "source_span_id", "from_id"))
-        target_id = _first_string(payload, ("target_id", "target_span_id", "to_id"))
-        source_id = proposed_span_ids.get(source_id, source_id) if source_id else None
-        target_id = proposed_span_ids.get(target_id, target_id) if target_id else None
+        source_reference = _first_string(
+            payload, ("source_id", "source_span_id", "from_id")
+        )
+        target_reference = _first_string(
+            payload, ("target_id", "target_span_id", "to_id")
+        )
+        source_id = (
+            proposed_span_ids.get(source_reference, source_reference)
+            if source_reference
+            else None
+        )
+        target_id = (
+            proposed_span_ids.get(target_reference, target_reference)
+            if target_reference
+            else None
+        )
         confidence, confidence_error = _confidence(payload)
-        spans, relations = _result_maps(results)
+        spans, relations = _result_groups(results)
 
         if relation_type is None or relation_type not in allowed_relation_types:
             reason = "unknown_relation_type"
+        elif source_reference in ambiguous_proposed_ids:
+            reason = "ambiguous_source_endpoint"
+        elif target_reference in ambiguous_proposed_ids:
+            reason = "ambiguous_target_endpoint"
         elif source_id is None or source_id not in spans:
             reason = "missing_source_endpoint"
+        elif len(spans[source_id]) > 1:
+            reason = "ambiguous_source_endpoint"
         elif target_id is None or target_id not in spans:
             reason = "missing_target_endpoint"
+        elif len(spans[target_id]) > 1:
+            reason = "ambiguous_target_endpoint"
         elif source_id == target_id:
             reason = "self_relation_not_allowed"
         elif confidence_error:
@@ -789,7 +993,8 @@ def _apply_review(
             _relation_type(relation) == relation_type
             and relation.get("from_id") == source_id
             and relation.get("to_id") == target_id
-            for relation in relations.values()
+            for matching_relations in relations.values()
+            for relation in matching_relations
         ):
             reason = "duplicate_relation"
         else:
@@ -875,6 +1080,15 @@ def validate_document(
             _validation_error("invalid_document_text", "data.text", str(error))
         )
         text = ""
+    else:
+        if not text.strip():
+            errors.append(
+                _validation_error(
+                    "empty_document_text",
+                    "data.text",
+                    "Document text must not be empty or whitespace-only",
+                )
+            )
     try:
         results = _annotation_results(document, f"document[{identifier}]")
     except ReviewMergeError as error:
@@ -1230,6 +1444,9 @@ def merge_datasets(
                     reason="unknown_document_id",
                 )
         if requested_count == 0:
+            counters.rejected["review"] += 1
+            unmatched_outcome.rejected["review"] += 1
+            unmatched_outcome.rejection_reasons["unknown_document_id"] += 1
             rejections.append(
                 {
                     "document_id": identifier,
@@ -1403,12 +1620,22 @@ def write_outputs(
     artifacts: MergeArtifacts, output_dir: Path, *, dry_run: bool
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    _atomic_write(
-        output_dir / "review_merge_report.json",
-        _stable_json(artifacts.report, pretty=True),
-    )
+    report_path = output_dir / "review_merge_report.json"
     if dry_run:
+        stale_outputs = sorted(
+            name
+            for name in OUTPUT_FILENAMES - {report_path.name}
+            if (output_dir / name).exists()
+        )
+        if stale_outputs:
+            raise ReviewMergeError(
+                "Dry-run output directory contains dataset artifacts; use a "
+                "separate directory: " + ", ".join(stale_outputs)
+            )
+        _atomic_write(report_path, _stable_json(artifacts.report, pretty=True))
         return
+
+    report_path.unlink(missing_ok=True)
     for split in SPLIT_NAMES:
         _write_jsonl(output_dir / f"{split}_reviewed.jsonl", artifacts.reviewed[split])
         _write_jsonl(output_dir / f"{split}_clean.jsonl", artifacts.clean[split])
@@ -1419,6 +1646,7 @@ def write_outputs(
     _write_jsonl(
         output_dir / "document_review_status.jsonl", artifacts.document_statuses
     )
+    _atomic_write(report_path, _stable_json(artifacts.report, pretty=True))
 
 
 def run_pipeline(
