@@ -10,6 +10,7 @@ from ml.resume_analysis.apply_ollama_reviews import (
     ReviewMergeError,
     document_id,
     find_cross_split_text_duplicates,
+    load_json_records,
     merge_datasets,
     run_pipeline,
     validate_document,
@@ -66,7 +67,7 @@ def task(
         results = [
             span("s1", "PERSON_NAME", 0, 5, "Alice"),
             span("s2", "COMPANY", 6, 10, "Acme"),
-            span("s3", "SKILL", 11, 17, "Python"),
+            span("s3", "TECHNICAL_SKILL", 11, 17, "Python"),
             relation("r1", "BELONGS_TO", "s1", "s2"),
         ]
     return {
@@ -120,7 +121,7 @@ def test_valid_span_addition_has_stable_non_gold_provenance() -> None:
                 add_spans=[
                     {
                         "id": "proposed-sql",
-                        "label": "SKILL",
+                        "label": "TECHNICAL_SKILL",
                         "start": 18,
                         "end": 21,
                         "exact_text": "SQL",
@@ -152,7 +153,7 @@ def test_valid_span_deletion() -> None:
 
     ids = {result["id"] for result in results_for(artifacts.reviewed["train"][0])}
     assert "s3" not in ids
-    assert artifacts.report["deleted_span_counts_by_label"] == {"SKILL": 1}
+    assert artifacts.report["deleted_span_counts_by_label"] == {"TECHNICAL_SKILL": 1}
 
 
 def test_unknown_span_deletion_rejects_only_operation() -> None:
@@ -233,7 +234,7 @@ def test_text_offset_mismatch_is_rejected() -> None:
                 "doc-1",
                 add_spans=[
                     {
-                        "label": "SKILL",
+                        "label": "TECHNICAL_SKILL",
                         "start": 18,
                         "end": 21,
                         "exact_text": "Python",
@@ -254,7 +255,7 @@ def test_duplicate_span_addition_is_rejected() -> None:
                 "doc-1",
                 add_spans=[
                     {
-                        "label": "SKILL",
+                        "label": "TECHNICAL_SKILL",
                         "start": 11,
                         "end": 17,
                         "exact_text": "Python",
@@ -293,7 +294,7 @@ def test_partial_acceptance_ignores_review_complete() -> None:
         delete_span_ids=["missing"],
         add_spans=[
             {
-                "label": "SKILL",
+                "label": "TECHNICAL_SKILL",
                 "start": 18,
                 "end": 21,
                 "exact_text": "SQL",
@@ -380,7 +381,7 @@ def test_reapplying_same_patch_is_logically_idempotent() -> None:
         add_spans=[
             {
                 "id": "new-sql",
-                "label": "SKILL",
+                "label": "TECHNICAL_SKILL",
                 "start": 18,
                 "end": 21,
                 "exact_text": "SQL",
@@ -430,7 +431,7 @@ def test_output_ordering_is_byte_deterministic(tmp_path: Path) -> None:
                 "train-id",
                 add_spans=[
                     {
-                        "label": "SKILL",
+                        "label": "TECHNICAL_SKILL",
                         "start": 18,
                         "end": 21,
                         "exact_text": "SQL",
@@ -556,3 +557,179 @@ def test_full_validator_rejects_dangling_relation() -> None:
     )
 
     assert "missing_target_endpoint" in {error["code"] for error in errors}
+
+
+def test_temporary_span_id_conflict_cannot_retarget_relation() -> None:
+    artifacts = merge_datasets(
+        splits(task("doc-1")),
+        [
+            patch(
+                "doc-1",
+                add_spans=[
+                    {
+                        "id": "s1",
+                        "label": "TECHNICAL_SKILL",
+                        "start": 18,
+                        "end": 21,
+                        "exact_text": "SQL",
+                    }
+                ],
+                add_relations=[
+                    {
+                        "relation_type": "BELONGS_TO",
+                        "source_id": "s1",
+                        "target_id": "s3",
+                    }
+                ],
+            )
+        ],
+    )
+
+    assert [item["reason"] for item in artifacts.rejected_operations] == [
+        "proposed_span_id_conflict",
+        "ambiguous_source_endpoint",
+    ]
+    assert artifacts.reviewed["train"] == splits(task("doc-1"))["train"]
+
+
+def test_duplicate_temporary_span_ids_reject_all_ambiguous_additions() -> None:
+    addition = {
+        "id": "new-skill",
+        "label": "TECHNICAL_SKILL",
+        "start": 18,
+        "end": 21,
+        "exact_text": "SQL",
+    }
+    artifacts = merge_datasets(
+        splits(task("doc-1")),
+        [patch("doc-1", add_spans=[addition, copy.deepcopy(addition)])],
+    )
+
+    assert [item["reason"] for item in artifacts.rejected_operations] == [
+        "duplicate_proposed_span_id",
+        "duplicate_proposed_span_id",
+    ]
+
+
+def test_duplicate_base_span_id_makes_deletion_ambiguous() -> None:
+    ambiguous = task(
+        "doc-1",
+        results=[
+            span("duplicate", "PERSON_NAME", 0, 5, "Alice"),
+            span("duplicate", "COMPANY", 6, 10, "Acme"),
+        ],
+    )
+    artifacts = merge_datasets(
+        splits(ambiguous), [patch("doc-1", delete_span_ids=["duplicate"])]
+    )
+
+    assert artifacts.rejected_operations[0]["reason"] == "ambiguous_delete_span_id"
+    assert artifacts.reviewed["train"] == [ambiguous]
+    assert artifacts.document_statuses[0]["status"] == "document_invalid"
+
+
+def test_explicit_relation_delete_satisfied_by_span_cleanup() -> None:
+    artifacts = merge_datasets(
+        splits(task("doc-1")),
+        [
+            patch(
+                "doc-1",
+                delete_span_ids=["s2"],
+                delete_relation_ids=["r1"],
+            )
+        ],
+    )
+
+    assert artifacts.rejected_operations == []
+    assert artifacts.document_statuses[0]["status"] == "fully_applied"
+    assert artifacts.report["applied_operation_counts"] == {
+        "delete_relation_ids": 1,
+        "delete_span_ids": 1,
+    }
+
+
+def test_validation_only_label_does_not_authorize_training_addition() -> None:
+    source = {
+        "train": [task("train-id")],
+        "validation": [
+            task(
+                "validation-id",
+                text="Eval",
+                results=[span("eval", "EVAL_ONLY", 0, 4, "Eval")],
+            )
+        ],
+        "test": [],
+    }
+    artifacts = merge_datasets(
+        source,
+        [
+            patch(
+                "train-id",
+                add_spans=[
+                    {
+                        "label": "EVAL_ONLY",
+                        "start": 18,
+                        "end": 21,
+                        "exact_text": "SQL",
+                    }
+                ],
+            )
+        ],
+    )
+
+    assert artifacts.rejected_operations[0]["reason"] == "unknown_label"
+    assert "EVAL_ONLY" not in artifacts.report["allowed_labels"]
+
+
+def test_nonstandard_json_numeric_constants_are_rejected(tmp_path: Path) -> None:
+    invalid_json = tmp_path / "invalid.json"
+    invalid_json.write_text('[{"document_id":"x","score":NaN}]', encoding="utf-8")
+
+    with pytest.raises(ReviewMergeError, match="Non-standard JSON numeric"):
+        load_json_records(invalid_json, kind="reviews")
+
+
+def test_leakage_normalization_handles_unicode_and_empty_text() -> None:
+    source = {
+        "train": [
+            task("accent-train", text="Café", results=[]),
+            task("empty-train", text="", results=[]),
+        ],
+        "validation": [
+            task("accent-validation", text="Cafe\u0301", results=[]),
+            task("empty-validation", text="  \n", results=[]),
+        ],
+        "test": [],
+    }
+
+    duplicates = find_cross_split_text_duplicates(source)
+    assert len(duplicates) == 2
+    with pytest.raises(ReviewMergeError, match="normalized-text"):
+        merge_datasets(source, [], strict=True)
+
+
+def test_dry_run_rejects_directory_with_stale_dataset_outputs(tmp_path: Path) -> None:
+    train, validation, test, reviews = pipeline_inputs(tmp_path)
+    output = tmp_path / "stale-dry-run"
+    output.mkdir()
+    (output / "train_reviewed.jsonl").write_text("", encoding="utf-8")
+
+    with pytest.raises(ReviewMergeError, match="separate directory"):
+        run_pipeline(
+            train_path=train,
+            validation_path=validation,
+            test_path=test,
+            reviews_path=reviews,
+            output_dir=output,
+            dry_run=True,
+        )
+
+
+def test_unmatched_noop_review_counts_a_rejected_review() -> None:
+    artifacts = merge_datasets(splits(task("doc-1")), [patch("unknown")])
+
+    assert artifacts.report["rejected_operation_counts"] == {"review": 1}
+    assert artifacts.document_statuses[-1]["rejected_operations"] == 1
+    assert artifacts.document_statuses[-1]["rejection_reasons"] == {
+        "unknown_document_id": 1
+    }
