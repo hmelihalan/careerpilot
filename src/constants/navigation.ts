@@ -1,9 +1,9 @@
 import {
   BarChart3,
   BriefcaseBusiness,
+  FileSearch,
   LayoutDashboard,
   Settings,
-  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,7 +39,7 @@ export const appNavigation: Record<AppMode, readonly AppNavigationItem[]> = {
       href: appRoutes.authenticated.applications,
       icon: BriefcaseBusiness,
     },
-    { name: "AI Studio", href: "/ai-studio", icon: Sparkles },
+    { name: "Resume Analyzer", href: "/ai-studio", icon: FileSearch },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
   ],
@@ -50,7 +50,7 @@ export const appNavigation: Record<AppMode, readonly AppNavigationItem[]> = {
       href: appRoutes.demo.applications,
       icon: BriefcaseBusiness,
     },
-    { name: "AI Studio", icon: Sparkles, preview: true },
+    { name: "Resume Analyzer", icon: FileSearch, preview: true },
     { name: "Analytics", icon: BarChart3, preview: true },
     { name: "Settings", icon: Settings, preview: true },
   ],

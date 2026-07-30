@@ -2,7 +2,9 @@
 
 CareerPilot is a Next.js application for tracking job applications, status history, and job-search metrics. Authentication is provided by Clerk and application data is stored in PostgreSQL through Prisma.
 
-Resume storage, PDF parsing, Notes CRUD, and AI provider integrations are not implemented yet.
+The protected Resume Analyzer accepts PDF or TXT resumes, extracts readable
+text without storing the upload, and returns structured feedback from a local
+Ollama model. Notes CRUD and durable resume storage are not implemented.
 
 ## Requirements
 
@@ -10,6 +12,7 @@ Resume storage, PDF parsing, Notes CRUD, and AI provider integrations are not im
 - pnpm
 - Clerk application credentials
 - A PostgreSQL database such as Neon
+- Ollama with the `qwen3:4b` model for local resume analysis
 
 ## Environment setup
 
@@ -22,12 +25,16 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_replace_me
 CLERK_SECRET_KEY=sk_test_replace_me
 DATABASE_URL=postgresql://USER:PASSWORD@POOLED_HOST/DATABASE
 DIRECT_URL=postgresql://USER:PASSWORD@DIRECT_HOST/DATABASE
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=qwen3:4b
 ```
 
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` is Clerk's browser-safe publishable key.
 - `CLERK_SECRET_KEY` is server-only and must never be exposed to the browser or committed.
 - `DATABASE_URL` is the pooled runtime connection used by the application and should be suitable for serverless deployment.
 - `DIRECT_URL` is the direct database connection used by Prisma CLI and migration commands.
+- `OLLAMA_BASE_URL` is the server-only local Ollama API address.
+- `OLLAMA_MODEL` selects the local structured-analysis model.
 
 Use real values only in `.env.local` or deployment environment settings such as Vercel. If active credentials were ever committed, replacing the example file is not sufficient: rotate those credentials manually and review the repository history.
 
@@ -36,6 +43,7 @@ Use real values only in `.env.local` or deployment environment settings such as 
 ```bash
 pnpm install
 pnpm prisma generate
+ollama pull qwen3:4b
 pnpm dev
 ```
 
@@ -87,4 +95,17 @@ Vercel must have the Clerk variables and `DATABASE_URL` available during the rel
 
 - `/demo` is public and uses local sample data only.
 - `/dashboard`, `/applications`, and other application routes are protected by Clerk.
+- `/ai-studio` provides private, local resume analysis for signed-in users.
 - Server-side data access derives `userId` from Clerk and scopes user-owned records accordingly.
+
+## Resume analysis
+
+The analyzer accepts text-based PDF and TXT files up to 8 MB. Files are handled
+only for the active request and are not written to application storage. The
+server extracts text, sends it to the configured local Ollama model with a
+strict JSON schema, validates the response, and returns scores and grounded
+recommendations to the browser.
+
+Scanned PDFs without a readable text layer currently require OCR before upload.
+The analyzer can flag likely OCR errors in extracted text, but it does not
+rewrite the source document or use the checked-in ML dataset at runtime.

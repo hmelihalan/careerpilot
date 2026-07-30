@@ -13,7 +13,7 @@ const ollamaResponseSchema = z.object({
 });
 
 const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434";
-const DEFAULT_OLLAMA_MODEL = "qwen3:8b";
+const DEFAULT_OLLAMA_MODEL = "qwen3:4b";
 const MAX_RESUME_TEXT_LENGTH = 50_000;
 const REQUEST_TIMEOUT_MS = 120_000;
 

@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       metadata: {
         characterCount: resumeText.length,
         fileName: resume.name,
-        model: process.env.OLLAMA_MODEL ?? "qwen3:8b",
+        model: process.env.OLLAMA_MODEL ?? "qwen3:4b",
       },
     });
   } catch (error) {
