@@ -333,6 +333,81 @@ def test_duplicate_span_addition_is_rejected() -> None:
     assert artifacts.rejected_operations[0]["reason"] == "duplicate_span"
 
 
+def test_exact_duplicate_base_span_is_cleaned_and_relation_is_rewired() -> None:
+    duplicate = span("s4", "TECHNICAL_SKILL", 11, 17, "Python")
+    source = task(
+        "doc-1",
+        results=[
+            span("s1", "PERSON_NAME", 0, 5, "Alice"),
+            span("s3", "TECHNICAL_SKILL", 11, 17, "Python"),
+            duplicate,
+            relation("r1", "BELONGS_TO", "s1", "s4"),
+        ],
+    )
+
+    artifacts = merge_datasets(splits(source), [])
+    results = results_for(artifacts.reviewed["train"][0])
+
+    assert {result["id"] for result in results} == {"s1", "s3", "r1"}
+    assert results[-1]["to_id"] == "s3"
+    assert artifacts.document_statuses[0]["status"] == "automatically_cleaned"
+    assert artifacts.report["automatic_duplicate_span_cleanups"] == 1
+    assert artifacts.report[
+        "automatic_duplicate_span_cleanup_counts_by_label"
+    ] == {"TECHNICAL_SKILL": 1}
+    assert artifacts.report[
+        "automatic_duplicate_span_relation_rewire_counts_by_type"
+    ] == {"BELONGS_TO": 1}
+    assert artifacts.report["invalid_base_documents"] == 1
+    assert artifacts.report["invalid_final_documents"] == 0
+
+
+def test_duplicate_span_with_ambiguous_id_is_not_automatically_cleaned() -> None:
+    ambiguous = task(
+        "doc-1",
+        results=[
+            span("same", "TECHNICAL_SKILL", 11, 17, "Python"),
+            span("same", "TECHNICAL_SKILL", 11, 17, "Python"),
+        ],
+    )
+
+    artifacts = merge_datasets(splits(ambiguous), [])
+
+    assert artifacts.reviewed["train"] == [ambiguous]
+    assert artifacts.document_statuses[0]["status"] == "document_invalid"
+    assert artifacts.report["automatic_duplicate_span_cleanups"] == 0
+
+
+def test_self_relation_created_by_duplicate_cleanup_is_removed() -> None:
+    source = task(
+        "doc-1",
+        results=[
+            span("s3", "TECHNICAL_SKILL", 11, 17, "Python"),
+            span("s4", "TECHNICAL_SKILL", 11, 17, "Python"),
+            relation("r1", "BELONGS_TO", "s4", "s3"),
+        ],
+    )
+
+    artifacts = merge_datasets(splits(source), [])
+    results = results_for(artifacts.reviewed["train"][0])
+
+    assert [result["id"] for result in results] == ["s3"]
+    assert artifacts.report["invalid_final_documents"] == 0
+    assert artifacts.report[
+        "automatic_duplicate_span_relation_cleanup_counts_by_type"
+    ] == {"BELONGS_TO": 1}
+    cleanups = artifacts.document_statuses[0][
+        "automatic_duplicate_span_relation_cleanups"
+    ]
+    assert cleanups == [
+        {
+            "reason": "self_relation_after_duplicate_span_rewire",
+            "relation_id": "r1",
+            "relation_type": "BELONGS_TO",
+        }
+    ]
+
+
 def test_duplicate_relation_addition_is_rejected() -> None:
     artifacts = merge_datasets(
         splits(task("doc-1")),

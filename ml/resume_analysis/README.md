@@ -155,6 +155,15 @@ relation, that requested deletion is accepted as already satisfied by cleanup.
 Unknown or ambiguous delete IDs and missing relation endpoints are
 operation-level rejections.
 
+After review operations, exact duplicate base spans with unique IDs are
+deterministically collapsed to the first occurrence. Relations pointing to a
+removed duplicate are rewired to the retained span. If that rewire would create
+a self-relation, the now-meaningless relation is removed and audited. Duplicate
+spans with missing or ambiguous IDs are left untouched so full-document
+validation can flag them instead of guessing. Per-document cleanup and rewire
+records, plus aggregate counts by label and relation type, are included in the
+audit output.
+
 Stable span and relation IDs are SHA-256-derived from the document ID and
 semantic annotation key. Re-running the same inputs is deterministic, and
 reapplying a patch to reviewed output cannot duplicate an annotation.

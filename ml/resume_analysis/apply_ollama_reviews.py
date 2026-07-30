@@ -172,6 +172,13 @@ class MergeCounters:
     added_relations_by_type: Counter[str] = field(default_factory=Counter)
     deleted_relations_by_type: Counter[str] = field(default_factory=Counter)
     cleanup_relations_by_type: Counter[str] = field(default_factory=Counter)
+    cleanup_duplicate_spans_by_label: Counter[str] = field(default_factory=Counter)
+    rewired_duplicate_span_relations_by_type: Counter[str] = field(
+        default_factory=Counter
+    )
+    cleanup_duplicate_span_relations_by_type: Counter[str] = field(
+        default_factory=Counter
+    )
 
 
 @dataclass
@@ -1102,6 +1109,108 @@ def _validation_error(code: str, location: str, message: str) -> JsonObject:
     return {"code": code, "location": location, "message": message}
 
 
+def _deduplicate_exact_spans(
+    document: JsonObject,
+) -> tuple[list[JsonObject], list[JsonObject], list[JsonObject]]:
+    """Remove safely identifiable exact duplicate spans and rewire relations."""
+
+    results = _annotation_results(document, "document")
+    result_id_counts = Counter(
+        result_id
+        for result in results
+        if (result_id := _as_nonempty_string(result.get("id"))) is not None
+    )
+    canonical_by_key: dict[tuple[str, int, int], JsonObject] = {}
+    removed_positions: set[int] = set()
+    span_id_remap: dict[str, str] = {}
+    cleanups: list[JsonObject] = []
+
+    for position, result in enumerate(results):
+        if result.get("type") != "labels":
+            continue
+        value = result.get("value")
+        if not isinstance(value, dict):
+            continue
+        label = _span_label(result)
+        start, end = value.get("start"), value.get("end")
+        if label is None or not _is_integer(start) or not _is_integer(end):
+            continue
+
+        key = (label, start, end)
+        canonical = canonical_by_key.get(key)
+        if canonical is None:
+            canonical_by_key[key] = result
+            continue
+
+        duplicate_id = _as_nonempty_string(result.get("id"))
+        canonical_id = _as_nonempty_string(canonical.get("id"))
+        if (
+            duplicate_id is None
+            or canonical_id is None
+            or result_id_counts[duplicate_id] != 1
+            or result_id_counts[canonical_id] != 1
+        ):
+            continue
+
+        removed_positions.add(position)
+        span_id_remap[duplicate_id] = canonical_id
+        cleanups.append(
+            {
+                "end": end,
+                "kept_span_id": canonical_id,
+                "label": label,
+                "removed_span_id": duplicate_id,
+                "start": start,
+            }
+        )
+
+    relation_rewires: list[JsonObject] = []
+    relation_cleanups: list[JsonObject] = []
+    for position, result in enumerate(results):
+        if result.get("type") != "relation":
+            continue
+        relation_id = _as_nonempty_string(result.get("id"))
+        relation_type = _relation_type(result)
+        relation_was_rewired = False
+        for endpoint in ("from_id", "to_id"):
+            old_span_id = _as_nonempty_string(result.get(endpoint))
+            if old_span_id is None or old_span_id not in span_id_remap:
+                continue
+            new_span_id = span_id_remap[old_span_id]
+            result[endpoint] = new_span_id
+            relation_was_rewired = True
+            relation_rewires.append(
+                {
+                    "endpoint": endpoint,
+                    "new_span_id": new_span_id,
+                    "old_span_id": old_span_id,
+                    "relation_id": relation_id,
+                    "relation_type": relation_type,
+                }
+            )
+
+        if (
+            result.get("from_id") == result.get("to_id")
+            and relation_was_rewired
+        ):
+            removed_positions.add(position)
+            relation_cleanups.append(
+                {
+                    "reason": "self_relation_after_duplicate_span_rewire",
+                    "relation_id": relation_id,
+                    "relation_type": relation_type,
+                }
+            )
+
+    if removed_positions:
+        results[:] = [
+            result
+            for position, result in enumerate(results)
+            if position not in removed_positions
+        ]
+    return cleanups, relation_rewires, relation_cleanups
+
+
 def validate_document(
     document: JsonObject,
     *,
@@ -1416,6 +1525,25 @@ def merge_datasets(
                     counters=counters,
                     rejections=rejections,
                 )
+            (
+                duplicate_span_cleanups,
+                duplicate_span_relation_rewires,
+                duplicate_span_relation_cleanups,
+            ) = _deduplicate_exact_spans(reviewed[split][position])
+            for cleanup in duplicate_span_cleanups:
+                counters.cleanup_duplicate_spans_by_label[cleanup["label"]] += 1
+            for rewire in duplicate_span_relation_rewires:
+                relation_type = rewire["relation_type"]
+                if relation_type is not None:
+                    counters.rewired_duplicate_span_relations_by_type[
+                        relation_type
+                    ] += 1
+            for cleanup in duplicate_span_relation_cleanups:
+                relation_type = cleanup["relation_type"]
+                if relation_type is not None:
+                    counters.cleanup_duplicate_span_relations_by_type[
+                        relation_type
+                    ] += 1
             final_errors = validate_document(
                 reviewed[split][position],
                 allowed_labels=allowed_labels,
@@ -1429,7 +1557,11 @@ def merge_datasets(
             if final_errors:
                 status = "document_invalid"
             elif review is None or requested_count == 0 or applied_count == 0:
-                status = "unchanged"
+                status = (
+                    "automatically_cleaned"
+                    if duplicate_span_cleanups
+                    else "unchanged"
+                )
             elif rejected_count == 0 and applied_count == requested_count:
                 status = "fully_applied"
             else:
@@ -1439,6 +1571,13 @@ def merge_datasets(
                 {
                     "applied_operation_counts": _counter_dict(outcome.applied),
                     "applied_operations": applied_count,
+                    "automatic_duplicate_span_cleanups": duplicate_span_cleanups,
+                    "automatic_duplicate_span_relation_rewires": (
+                        duplicate_span_relation_rewires
+                    ),
+                    "automatic_duplicate_span_relation_cleanups": (
+                        duplicate_span_relation_cleanups
+                    ),
                     "automatic_relation_cleanups": outcome.automatic_relation_cleanups,
                     "base_validation_errors": base_errors,
                     "document_id": identifier,
@@ -1508,6 +1647,9 @@ def merge_datasets(
             {
                 "applied_operation_counts": {},
                 "applied_operations": 0,
+                "automatic_duplicate_span_cleanups": [],
+                "automatic_duplicate_span_relation_cleanups": [],
+                "automatic_duplicate_span_relation_rewires": [],
                 "automatic_relation_cleanups": [],
                 "base_validation_errors": [],
                 "document_id": identifier,
@@ -1581,6 +1723,18 @@ def merge_datasets(
             for split in SPLIT_NAMES
         },
         "applied_operation_counts": _counter_dict(counters.applied),
+        "automatic_duplicate_span_cleanup_counts_by_label": _counter_dict(
+            counters.cleanup_duplicate_spans_by_label
+        ),
+        "automatic_duplicate_span_cleanups": _sum_counter(
+            counters.cleanup_duplicate_spans_by_label
+        ),
+        "automatic_duplicate_span_relation_rewire_counts_by_type": _counter_dict(
+            counters.rewired_duplicate_span_relations_by_type
+        ),
+        "automatic_duplicate_span_relation_cleanup_counts_by_type": _counter_dict(
+            counters.cleanup_duplicate_span_relations_by_type
+        ),
         "automatic_relation_cleanup_counts_by_type": _counter_dict(
             counters.cleanup_relations_by_type
         ),
@@ -1592,6 +1746,9 @@ def merge_datasets(
         "document_status_counts": _counter_dict(status_counts),
         "documents_fully_applied": status_counts["fully_applied"],
         "documents_partially_applied": status_counts["partially_applied"],
+        "documents_automatically_cleaned": status_counts[
+            "automatically_cleaned"
+        ],
         "documents_unchanged": status_counts["unchanged"],
         "duplicate_document_ids": duplicate_ids,
         "final_label_distribution_by_split": label_distribution,
