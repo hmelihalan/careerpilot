@@ -295,6 +295,29 @@ The report contains input SHA-256 hashes so raw-file immutability can be checked
 after the merge. For non-dry runs it is published last and acts as the run
 completion marker; a failed/interrupted publication leaves no new report.
 
+## Core v1 training view
+
+The versioned `schemas/core_v1.json` schema narrows the first model to 25
+high-value labels that occur in train, validation, and test. It also permits
+only seven well-supported relation endpoint signatures, preventing structurally
+valid but semantically noisy relations from entering the first training view.
+
+Build the focused JSONL splits from validated clean output:
+
+```powershell
+python -m ml.resume_analysis.build_core_dataset `
+  --train ml/data/processed/reviewed/train_clean.jsonl `
+  --validation ml/data/processed/reviewed/validation_clean.jsonl `
+  --test ml/data/processed/reviewed/test_clean.jsonl `
+  --schema ml/resume_analysis/schemas/core_v1.json `
+  --output-dir ml/data/processed/core-v1
+```
+
+The builder preserves document membership and order, removes out-of-scope
+spans, retains only relations whose type and endpoint labels match the
+versioned schema, validates every resulting document, and writes an auditable
+distribution/hash report.
+
 ## Known limitations and current input state
 
 - There is no active resume annotation/audit implementation on the current Git

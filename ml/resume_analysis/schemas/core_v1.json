@@ -1,0 +1,68 @@
+{
+  "description": "Core resume entities with measurable coverage in every split. Container spans are limited to experience and education blocks needed by relation extraction.",
+  "labels": [
+    "COMPANY",
+    "CONTACT_LOCATION",
+    "DATABASE",
+    "DEGREE",
+    "EDUCATION_BLOCK",
+    "EDUCATION_END_DATE",
+    "EDUCATION_LOCATION",
+    "EDUCATION_START_DATE",
+    "EMAIL",
+    "EXPERIENCE_BLOCK",
+    "FIELD_OF_STUDY",
+    "INSTITUTION",
+    "JOB_TITLE",
+    "LANGUAGE_PROFICIENCY",
+    "PERSON_NAME",
+    "PHONE",
+    "PROGRAMMING_LANGUAGE",
+    "SOFT_SKILL",
+    "SPOKEN_LANGUAGE",
+    "SUMMARY_TEXT",
+    "WORK_ACHIEVEMENT",
+    "WORK_DESCRIPTION",
+    "WORK_END_DATE",
+    "WORK_LOCATION",
+    "WORK_START_DATE"
+  ],
+  "relation_signatures": [
+    {
+      "relation_type": "AWARDED_BY",
+      "source_label": "DEGREE",
+      "target_label": "INSTITUTION"
+    },
+    {
+      "relation_type": "BELONGS_TO",
+      "source_label": "JOB_TITLE",
+      "target_label": "COMPANY"
+    },
+    {
+      "relation_type": "HAS_END_DATE",
+      "source_label": "EXPERIENCE_BLOCK",
+      "target_label": "WORK_END_DATE"
+    },
+    {
+      "relation_type": "HAS_FIELD",
+      "source_label": "EDUCATION_BLOCK",
+      "target_label": "FIELD_OF_STUDY"
+    },
+    {
+      "relation_type": "HAS_LOCATION",
+      "source_label": "JOB_TITLE",
+      "target_label": "WORK_LOCATION"
+    },
+    {
+      "relation_type": "HAS_PROFICIENCY",
+      "source_label": "SPOKEN_LANGUAGE",
+      "target_label": "LANGUAGE_PROFICIENCY"
+    },
+    {
+      "relation_type": "HAS_START_DATE",
+      "source_label": "EXPERIENCE_BLOCK",
+      "target_label": "WORK_START_DATE"
+    }
+  ],
+  "version": "core-v1"
+}
