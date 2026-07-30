@@ -320,6 +320,13 @@ distribution/hash report. Import `test_core.json` into Label Studio for the
 human gold-set review; the generated file is a single JSON array rather than
 JSONL.
 
+Before importing, paste
+`label_studio/core_v1_config.xml` into the project's labeling-interface code
+editor. The configuration uses the same `label` and `text` control names as the
+stored predictions, exposes all 25 core labels and seven relation types, and
+supports overlapping spans. Follow `label_studio/CORE_V1_REVIEW_GUIDE.md` for
+the annotation rules and allowed relation endpoint signatures.
+
 ## Known limitations and current input state
 
 - There is no active resume annotation/audit implementation on the current Git

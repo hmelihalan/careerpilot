@@ -1,0 +1,50 @@
+<View>
+  <Header value="CareerPilot Resume Analyzer — Core v1 Gold Review"/>
+  <Header
+    value="Review every proposed span and relation. Fix boundaries, remove incorrect annotations, and add missing core labels."
+    size="4"
+  />
+
+  <Relations>
+    <Relation value="AWARDED_BY" background="#7C3AED"/>
+    <Relation value="BELONGS_TO" background="#2563EB"/>
+    <Relation value="HAS_END_DATE" background="#DC2626"/>
+    <Relation value="HAS_FIELD" background="#9333EA"/>
+    <Relation value="HAS_LOCATION" background="#0891B2"/>
+    <Relation value="HAS_PROFICIENCY" background="#059669"/>
+    <Relation value="HAS_START_DATE" background="#EA580C"/>
+  </Relations>
+
+  <Labels name="label" toName="text" choice="single" showInline="true">
+    <Label value="PERSON_NAME" background="#0F766E"/>
+    <Label value="EMAIL" background="#0D9488"/>
+    <Label value="PHONE" background="#14B8A6"/>
+    <Label value="CONTACT_LOCATION" background="#2DD4BF"/>
+    <Label value="SUMMARY_TEXT" background="#64748B"/>
+
+    <Label value="EXPERIENCE_BLOCK" background="#1D4ED8"/>
+    <Label value="JOB_TITLE" background="#2563EB"/>
+    <Label value="COMPANY" background="#3B82F6"/>
+    <Label value="WORK_LOCATION" background="#60A5FA"/>
+    <Label value="WORK_START_DATE" background="#F97316"/>
+    <Label value="WORK_END_DATE" background="#EF4444"/>
+    <Label value="WORK_DESCRIPTION" background="#93C5FD"/>
+    <Label value="WORK_ACHIEVEMENT" background="#F59E0B"/>
+
+    <Label value="EDUCATION_BLOCK" background="#6D28D9"/>
+    <Label value="INSTITUTION" background="#7C3AED"/>
+    <Label value="DEGREE" background="#8B5CF6"/>
+    <Label value="FIELD_OF_STUDY" background="#A78BFA"/>
+    <Label value="EDUCATION_LOCATION" background="#C4B5FD"/>
+    <Label value="EDUCATION_START_DATE" background="#D97706"/>
+    <Label value="EDUCATION_END_DATE" background="#B91C1C"/>
+
+    <Label value="PROGRAMMING_LANGUAGE" background="#15803D"/>
+    <Label value="DATABASE" background="#16A34A"/>
+    <Label value="SOFT_SKILL" background="#4ADE80"/>
+    <Label value="SPOKEN_LANGUAGE" background="#65A30D"/>
+    <Label value="LANGUAGE_PROFICIENCY" background="#84CC16"/>
+  </Labels>
+
+  <Text name="text" value="$text" granularity="word"/>
+</View>
