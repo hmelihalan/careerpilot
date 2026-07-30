@@ -1,4 +1,6 @@
-import { PDFParse } from "pdf-parse";
+import "pdf-parse/worker";
+
+import { PasswordException, PDFParse, VerbosityLevel } from "pdf-parse";
 
 const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
 const MIN_READABLE_TEXT_LENGTH = 120;
@@ -7,6 +9,7 @@ export type ResumeFileErrorCode =
   | "file_too_large"
   | "insufficient_text"
   | "invalid_pdf"
+  | "password_protected"
   | "unsupported_type";
 
 export class ResumeFileError extends Error {
@@ -43,7 +46,8 @@ function isPdfFile(file: File): boolean {
 }
 
 async function extractPdfText(file: File): Promise<string> {
-  const bytes = new Uint8Array(await file.arrayBuffer());
+  const data = await file.arrayBuffer();
+  const bytes = new Uint8Array(data);
   const signature = new TextDecoder("ascii").decode(bytes.slice(0, 5));
   if (signature !== "%PDF-") {
     throw new ResumeFileError(
@@ -52,17 +56,35 @@ async function extractPdfText(file: File): Promise<string> {
     );
   }
 
-  const parser = new PDFParse({ data: bytes });
+  const parser = new PDFParse({
+    data,
+    verbosity: VerbosityLevel.ERRORS,
+  });
   try {
     const result = await parser.getText();
     return result.text;
-  } catch {
+  } catch (error) {
+    if (error instanceof PasswordException) {
+      throw new ResumeFileError(
+        "This PDF is password-protected. Remove the password and upload it again.",
+        "password_protected",
+      );
+    }
+
+    console.error("Resume PDF extraction failed.", {
+      error: error instanceof Error ? error.message : String(error),
+      fileSize: file.size,
+    });
     throw new ResumeFileError(
       "The PDF could not be read. Try exporting it again or upload a text file.",
       "invalid_pdf",
     );
   } finally {
-    await parser.destroy();
+    try {
+      await parser.destroy();
+    } catch {
+      // A cleanup failure should not replace the extraction result or error.
+    }
   }
 }
 
