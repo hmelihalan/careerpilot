@@ -86,6 +86,7 @@ describe("analyzeResumeText", () => {
       baseUrl: "http://ollama.test/",
       fetchImpl,
       model: "test-model",
+      provider: "ollama",
     });
 
     expect(result).toEqual(validAnalysis);
@@ -99,6 +100,54 @@ describe("analyzeResumeText", () => {
     expect(body.messages[1].content).toContain("<resume>");
   });
 
+  it("requests schema-constrained analysis from Groq", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: { content: JSON.stringify(validAnalysis) },
+            },
+          ],
+        }),
+        { status: 200 },
+      ),
+    );
+
+    const result = await analyzeResumeText("Software Engineer\nBuilt APIs", {
+      apiKey: "groq-test-key",
+      baseUrl: "https://groq.test/openai/v1/",
+      fetchImpl,
+      model: "test-groq-model",
+      provider: "groq",
+    });
+
+    expect(result).toEqual(validAnalysis);
+    const [url, request] = fetchImpl.mock.calls[0];
+    expect(url).toBe("https://groq.test/openai/v1/chat/completions");
+    expect(request.headers.Authorization).toBe("Bearer groq-test-key");
+    const body = JSON.parse(request.body);
+    expect(body.model).toBe("test-groq-model");
+    expect(body.response_format.type).toBe("json_schema");
+    expect(body.response_format.json_schema.strict).toBe(true);
+    expect(body.response_format.json_schema.schema.type).toBe("object");
+  });
+
+  it("requires a Groq key before making a cloud request", async () => {
+    const fetchImpl = vi.fn();
+
+    await expect(
+      analyzeResumeText("Software Engineer", {
+        apiKey: "",
+        fetchImpl,
+        provider: "groq",
+      }),
+    ).rejects.toMatchObject<Partial<ResumeAnalysisServiceError>>({
+      code: "provider_not_configured",
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it("rejects empty resume text before calling the model", async () => {
     const fetchImpl = vi.fn();
 
@@ -110,13 +159,32 @@ describe("analyzeResumeText", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
-  it("returns a stable error when Ollama is unavailable", async () => {
+  it("returns a stable error when the configured provider is unavailable", async () => {
     const fetchImpl = vi.fn().mockRejectedValue(new Error("offline"));
 
     await expect(
-      analyzeResumeText("Software Engineer", { fetchImpl }),
+      analyzeResumeText("Software Engineer", {
+        fetchImpl,
+        provider: "ollama",
+      }),
     ).rejects.toMatchObject<Partial<ResumeAnalysisServiceError>>({
-      code: "ollama_unavailable",
+      code: "provider_unavailable",
+    });
+  });
+
+  it("turns provider rate limits into a retryable error", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response("rate limited", { status: 429 }),
+    );
+
+    await expect(
+      analyzeResumeText("Software Engineer", {
+        apiKey: "groq-test-key",
+        fetchImpl,
+        provider: "groq",
+      }),
+    ).rejects.toMatchObject<Partial<ResumeAnalysisServiceError>>({
+      code: "rate_limited",
     });
   });
 });

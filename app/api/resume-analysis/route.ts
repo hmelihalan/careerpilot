@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import {
   analyzeResumeText,
+  getResumeAnalysisRuntime,
   ResumeAnalysisServiceError,
 } from "@/src/server/resume-analysis/analyze-resume";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/src/server/resume-analysis/extract-resume-text";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 function errorResponse(message: string, code: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -37,13 +39,15 @@ export async function POST(request: Request) {
   try {
     const resumeText = await extractResumeText(resume);
     const analysis = await analyzeResumeText(resumeText);
+    const analysisRuntime = getResumeAnalysisRuntime();
 
     return NextResponse.json({
       analysis,
       metadata: {
         characterCount: resumeText.length,
         fileName: resume.name,
-        model: process.env.OLLAMA_MODEL ?? "qwen3:4b",
+        model: analysisRuntime.model,
+        provider: analysisRuntime.provider,
       },
     });
   } catch (error) {
@@ -52,7 +56,13 @@ export async function POST(request: Request) {
       return errorResponse(error.message, error.code, status);
     }
     if (error instanceof ResumeAnalysisServiceError) {
-      const status = error.code === "ollama_unavailable" ? 503 : 502;
+      const status =
+        error.code === "rate_limited"
+          ? 429
+          : error.code === "provider_not_configured" ||
+              error.code === "provider_unavailable"
+            ? 503
+            : 502;
       return errorResponse(error.message, error.code, status);
     }
 

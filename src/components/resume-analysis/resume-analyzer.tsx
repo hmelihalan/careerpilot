@@ -27,6 +27,7 @@ type AnalysisResponse = {
     characterCount: number;
     fileName: string;
     model: string;
+    provider: "groq" | "ollama";
   };
 };
 
@@ -78,7 +79,11 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
-export function ResumeAnalyzer() {
+export function ResumeAnalyzer({
+  analysisMode,
+}: {
+  analysisMode: "cloud" | "local";
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -174,8 +179,8 @@ export function ResumeAnalyzer() {
             </h2>
             <p className="mt-1 max-w-md text-sm leading-6 text-slate-500">
               {file
-                ? `${(file.size / 1024).toFixed(0)} KB · Ready for private local analysis`
-                : "Upload a text-based PDF or TXT file up to 8 MB."}
+                ? `${(file.size / 1024).toFixed(0)} KB · Ready for analysis`
+                : "Upload a text-based PDF or TXT file up to 4 MB."}
             </p>
             <input
               ref={inputRef}
@@ -201,15 +206,17 @@ export function ResumeAnalyzer() {
             </span>
             <h2 className="mt-4 text-base font-semibold">Private by design</h2>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              Your file is processed for this request and sent only to your
-              locally configured Ollama model. CareerPilot does not save the
-              uploaded document.
+              {analysisMode === "cloud"
+                ? "CareerPilot does not save the uploaded document. Extracted resume text is sent to the configured cloud AI only for this analysis."
+                : "Your file is processed for this request and sent only to your locally configured Ollama model. CareerPilot does not save the uploaded document."}
             </p>
             <ul className="mt-4 space-y-2 text-xs text-slate-300">
               {[
                 "Structured, evidence-based feedback",
                 "No training dataset required",
-                "No resume content sent to a cloud LLM",
+                analysisMode === "cloud"
+                  ? "Resume text is processed by the configured cloud AI"
+                  : "No resume content sent to a cloud LLM",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-2">
                   <Check className="size-3.5 text-emerald-400" aria-hidden="true" />
@@ -263,8 +270,8 @@ export function ResumeAnalyzer() {
               Reading structure, impact, and ATS readiness
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-              The local model is checking each section and grounding suggestions
-              in the uploaded resume.
+              The analysis model is checking each section and grounding
+              suggestions in the uploaded resume.
             </p>
           </CardContent>
         </Card>
@@ -295,7 +302,9 @@ function AnalysisResults({
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="border-indigo-200 text-indigo-700">
                 <Sparkles aria-hidden="true" />
-                Local AI analysis
+                {metadata.provider === "groq"
+                  ? "Cloud AI analysis"
+                  : "Local AI analysis"}
               </Badge>
               <span className="text-xs text-slate-400">
                 {metadata.model} · {metadata.characterCount.toLocaleString()} characters
