@@ -302,7 +302,7 @@ high-value labels that occur in train, validation, and test. It also permits
 only seven well-supported relation endpoint signatures, preventing structurally
 valid but semantically noisy relations from entering the first training view.
 
-Build the focused JSONL splits from validated clean output:
+Build the focused Label Studio JSON-array splits from validated clean output:
 
 ```powershell
 python -m ml.resume_analysis.build_core_dataset `
@@ -316,7 +316,9 @@ python -m ml.resume_analysis.build_core_dataset `
 The builder preserves document membership and order, removes out-of-scope
 spans, retains only relations whose type and endpoint labels match the
 versioned schema, validates every resulting document, and writes an auditable
-distribution/hash report.
+distribution/hash report. Import `test_core.json` into Label Studio for the
+human gold-set review; the generated file is a single JSON array rather than
+JSONL.
 
 ## Known limitations and current input state
 

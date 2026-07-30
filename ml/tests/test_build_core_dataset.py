@@ -8,6 +8,7 @@ import pytest
 from ml.resume_analysis.apply_ollama_reviews import ReviewMergeError
 from ml.resume_analysis.build_core_dataset import (
     CoreSchema,
+    build_core_dataset,
     filter_document_to_core,
     load_core_schema,
 )
@@ -114,3 +115,55 @@ def test_schema_rejects_relation_labels_outside_label_set(tmp_path: Path) -> Non
 
     with pytest.raises(ReviewMergeError, match="outside schema.labels"):
         load_core_schema(schema_path)
+
+
+def test_builder_writes_label_studio_json_arrays(tmp_path: Path) -> None:
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    source = task(
+        [
+            span("s1", "PERSON_NAME", 0, 5, "Alice"),
+            span("s2", "COMPANY", 6, 10, "Acme"),
+            relation("r1", "BELONGS_TO", "s1", "s2"),
+        ]
+    )
+    split_paths: dict[str, Path] = {}
+    for split in ("train", "validation", "test"):
+        split_path = inputs / f"{split}.json"
+        split_path.write_text(json.dumps([source]), encoding="utf-8")
+        split_paths[split] = split_path
+
+    schema_path = tmp_path / "schema.json"
+    schema_path.write_text(
+        json.dumps(
+            {
+                "version": "test",
+                "labels": ["PERSON_NAME", "COMPANY"],
+                "relation_signatures": [
+                    {
+                        "relation_type": "BELONGS_TO",
+                        "source_label": "PERSON_NAME",
+                        "target_label": "COMPANY",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
+    for split in ("train", "validation", "test"):
+        (output_dir / f"{split}_core.jsonl").write_text(
+            "stale\n", encoding="utf-8"
+        )
+
+    build_core_dataset(
+        split_paths=split_paths,
+        schema_path=schema_path,
+        output_dir=output_dir,
+    )
+
+    for split in ("train", "validation", "test"):
+        output_path = output_dir / f"{split}_core.json"
+        assert isinstance(json.loads(output_path.read_text(encoding="utf-8")), list)
+        assert not (output_dir / f"{split}_core.jsonl").exists()

@@ -194,8 +194,9 @@ def build_core_dataset(
     report_path = output_dir / "core_dataset_report.json"
     report_path.unlink(missing_ok=True)
     for split in SPLIT_NAMES:
-        content = "".join(_stable_json(item) for item in filtered_splits[split])
-        _atomic_write(output_dir / f"{split}_core.jsonl", content)
+        (output_dir / f"{split}_core.jsonl").unlink(missing_ok=True)
+        content = _stable_json(filtered_splits[split], pretty=True)
+        _atomic_write(output_dir / f"{split}_core.json", content)
 
     label_distribution: dict[str, dict[str, int]] = {}
     relation_distribution: dict[str, dict[str, int]] = {}
