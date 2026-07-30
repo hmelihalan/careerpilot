@@ -98,6 +98,21 @@ describe("extractResumeText", () => {
     });
   });
 
+  it("keeps uploads below the Vercel request payload limit", async () => {
+    const file = new File(
+      [new Uint8Array(4 * 1024 * 1024 + 1)],
+      "resume.txt",
+      { type: "text/plain" },
+    );
+
+    await expect(extractResumeText(file)).rejects.toMatchObject<
+      Partial<ResumeFileError>
+    >({
+      code: "file_too_large",
+      message: "Resume files must be smaller than 4 MB.",
+    });
+  });
+
   it("checks PDF magic bytes instead of trusting the extension", async () => {
     const file = new File(["not actually a pdf"], "resume.pdf", {
       type: "application/pdf",

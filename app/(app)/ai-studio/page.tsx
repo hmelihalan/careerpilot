@@ -3,12 +3,18 @@ import { Sparkles } from "lucide-react";
 import { ResumeAnalyzer } from "@/src/components/resume-analysis/resume-analyzer";
 
 export default function AiStudioPage() {
+  const analysisMode =
+    (process.env.RESUME_ANALYSIS_PROVIDER ??
+      (process.env.VERCEL ? "groq" : "ollama")) === "groq"
+      ? "cloud"
+      : "local";
+
   return (
     <div className="min-w-0 space-y-5">
       <section aria-labelledby="resume-analyzer-title">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-indigo-600">
           <Sparkles className="size-3.5" aria-hidden="true" />
-          Local AI
+          {analysisMode === "cloud" ? "Cloud AI" : "Local AI"}
         </div>
         <h1
           id="resume-analyzer-title"
@@ -22,7 +28,7 @@ export default function AiStudioPage() {
         </p>
       </section>
 
-      <ResumeAnalyzer />
+      <ResumeAnalyzer analysisMode={analysisMode} />
     </div>
   );
 }

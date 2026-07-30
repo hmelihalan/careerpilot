@@ -2,7 +2,7 @@ import "pdf-parse/worker";
 
 import { PasswordException, PDFParse, VerbosityLevel } from "pdf-parse";
 
-const MAX_FILE_SIZE_BYTES = 8 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 4 * 1024 * 1024;
 const MIN_READABLE_TEXT_LENGTH = 120;
 
 export type ResumeFileErrorCode =
@@ -91,7 +91,7 @@ async function extractPdfText(file: File): Promise<string> {
 export async function extractResumeText(file: File): Promise<string> {
   if (file.size > MAX_FILE_SIZE_BYTES) {
     throw new ResumeFileError(
-      "Resume files must be smaller than 8 MB.",
+      "Resume files must be smaller than 4 MB.",
       "file_too_large",
     );
   }
