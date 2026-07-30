@@ -32,6 +32,13 @@ const DEFAULT_GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b";
 const MAX_RESUME_TEXT_LENGTH = 50_000;
 const REQUEST_TIMEOUT_MS = 120_000;
+const GROQ_UNSUPPORTED_SCHEMA_KEYS = new Set([
+  "$schema",
+  "maxItems",
+  "maxLength",
+  "minItems",
+  "minLength",
+]);
 
 export type ResumeAnalysisProvider = z.infer<typeof providerSchema>;
 
@@ -127,22 +134,38 @@ function buildSystemPrompt(): string {
   ].join(" ");
 }
 
-function buildUserPrompt(resumeText: string): string {
+function buildGroqJsonSchema(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(buildGroqJsonSchema);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([key]) => !GROQ_UNSUPPORTED_SCHEMA_KEYS.has(key))
+        .map(([key, child]) => [key, buildGroqJsonSchema(child)]),
+    );
+  }
+
+  return value;
+}
+
+function buildUserPrompt(resumeText: string, jsonSchema: unknown): string {
   return [
     "Analyze the resume below.",
     "Score content quality and ATS readiness, identify strengths, and give prioritized improvements.",
     "For example rewrites, improve only wording supported by the source; do not add facts or numbers.",
-    `Required JSON schema: ${JSON.stringify(resumeAnalysisJsonSchema)}`,
+    `Required JSON schema: ${JSON.stringify(jsonSchema)}`,
     "<resume>",
     resumeText,
     "</resume>",
   ].join("\n\n");
 }
 
-function buildMessages(resumeText: string) {
+function buildMessages(resumeText: string, jsonSchema: unknown) {
   return [
     { role: "system", content: buildSystemPrompt() },
-    { role: "user", content: buildUserPrompt(resumeText) },
+    { role: "user", content: buildUserPrompt(resumeText, jsonSchema) },
   ];
 }
 
@@ -157,7 +180,7 @@ function buildOllamaRequest(runtime: ResumeAnalysisRuntime, resumeText: string) 
         stream: false,
         think: false,
         format: resumeAnalysisJsonSchema,
-        messages: buildMessages(resumeText),
+        messages: buildMessages(resumeText, resumeAnalysisJsonSchema),
         options: {
           temperature: 0,
           seed: 42,
@@ -175,6 +198,8 @@ function buildGroqRequest(runtime: ResumeAnalysisRuntime, resumeText: string) {
     );
   }
 
+  const groqJsonSchema = buildGroqJsonSchema(resumeAnalysisJsonSchema);
+
   return {
     url: `${runtime.baseUrl}/chat/completions`,
     init: {
@@ -185,18 +210,19 @@ function buildGroqRequest(runtime: ResumeAnalysisRuntime, resumeText: string) {
       },
       body: JSON.stringify({
         model: runtime.model,
-        messages: buildMessages(resumeText),
+        messages: buildMessages(resumeText, groqJsonSchema),
         response_format: {
           type: "json_schema",
           json_schema: {
             name: "resume_analysis",
             strict: true,
-            schema: resumeAnalysisJsonSchema,
+            schema: groqJsonSchema,
           },
         },
         reasoning_effort: "low",
+        reasoning_format: "hidden",
         stream: false,
-        temperature: 0,
+        temperature: 0.2,
       }),
     } satisfies RequestInit,
   };

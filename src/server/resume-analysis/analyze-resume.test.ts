@@ -131,6 +131,15 @@ describe("analyzeResumeText", () => {
     expect(body.response_format.type).toBe("json_schema");
     expect(body.response_format.json_schema.strict).toBe(true);
     expect(body.response_format.json_schema.schema.type).toBe("object");
+    expect(body.reasoning_format).toBe("hidden");
+    const serializedSchema = JSON.stringify(
+      body.response_format.json_schema.schema,
+    );
+    expect(serializedSchema).not.toContain('"$schema"');
+    expect(serializedSchema).not.toContain('"minLength"');
+    expect(serializedSchema).not.toContain('"maxLength"');
+    expect(serializedSchema).not.toContain('"minItems"');
+    expect(serializedSchema).not.toContain('"maxItems"');
   });
 
   it("requires a Groq key before making a cloud request", async () => {
