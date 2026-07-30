@@ -29,6 +29,10 @@ OPERATION_TYPES = (
     "delete_relation_ids",
     "add_relations",
 )
+REVIEW_PAYLOAD_FIELDS = OPERATION_TYPES + (
+    "review_complete",
+    "unresolved_reason_codes",
+)
 OBSERVED_ALLOWED_LABELS = frozenset(
     {
         "ACCOUNTING_SKILL",
@@ -420,6 +424,47 @@ def _review_operations(
             )
         operations[operation_type] = value
     return operations
+
+
+def normalize_review_records(
+    reviews: Sequence[JsonObject],
+) -> list[JsonObject]:
+    """Normalize flat patches and Ollama worker envelopes to one patch shape.
+
+    Ollama worker output keeps patch operations and completion metadata in a
+    nested ``review`` object while document/model audit metadata remains at the
+    top level. The merger uses a flat canonical shape internally. Conflicting
+    duplicate fields are rejected instead of choosing one representation.
+    """
+
+    normalized_reviews: list[JsonObject] = []
+    for position, review in enumerate(reviews):
+        location = f"reviews[{position}]"
+        normalized = copy.deepcopy(review)
+        if "review" not in review:
+            normalized_reviews.append(normalized)
+            continue
+
+        nested_review = review["review"]
+        if not isinstance(nested_review, Mapping):
+            raise ReviewMergeError(f"{location}.review must be an object")
+
+        for field_name in REVIEW_PAYLOAD_FIELDS:
+            if field_name not in nested_review:
+                continue
+            if (
+                field_name in review
+                and review[field_name] != nested_review[field_name]
+            ):
+                raise ReviewMergeError(
+                    f"{location} has conflicting top-level and nested "
+                    f"review.{field_name} values"
+                )
+            normalized[field_name] = copy.deepcopy(nested_review[field_name])
+
+        normalized_reviews.append(normalized)
+
+    return normalized_reviews
 
 
 def validate_input_structure(
@@ -1320,6 +1365,7 @@ def merge_datasets(
     strict: bool = False,
     input_paths: InputPaths | None = None,
 ) -> MergeArtifacts:
+    reviews = normalize_review_records(reviews)
     index, duplicate_ids = validate_input_structure(splits, reviews)
     text_duplicates = find_cross_split_text_duplicates(splits)
     if strict and text_duplicates:

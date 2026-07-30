@@ -12,6 +12,7 @@ from ml.resume_analysis.apply_ollama_reviews import (
     find_cross_split_text_duplicates,
     load_json_records,
     merge_datasets,
+    normalize_review_records,
     run_pipeline,
     validate_document,
 )
@@ -94,6 +95,25 @@ def patch(document_id: str, **operations: object) -> dict[str, object]:
     return record
 
 
+def wrapped_patch(document_id: str, **operations: object) -> dict[str, object]:
+    nested_review: dict[str, object] = {
+        "review_complete": True,
+        "unresolved_reason_codes": [],
+        "delete_span_ids": [],
+        "add_spans": [],
+        "delete_relation_ids": [],
+        "add_relations": [],
+    }
+    nested_review.update(operations)
+    return {
+        "document_id": document_id,
+        "model": "qwen3:4b",
+        "source_index": 999,
+        "validation_errors": [],
+        "review": nested_review,
+    }
+
+
 def splits(*train_documents: dict[str, object]) -> dict[str, list[dict[str, object]]]:
     return {
         "train": [copy.deepcopy(document) for document in train_documents],
@@ -144,6 +164,51 @@ def test_valid_span_addition_has_stable_non_gold_provenance() -> None:
         "source": "ollama_review",
     }
     assert artifacts.report["applied_operation_counts"] == {"add_spans": 1}
+
+
+def test_nested_ollama_review_envelope_is_normalized_and_applied() -> None:
+    artifacts = merge_datasets(
+        splits(task("doc-1")),
+        [
+            wrapped_patch(
+                "doc-1",
+                add_spans=[
+                    {
+                        "id": "proposed-sql",
+                        "label": "TECHNICAL_SKILL",
+                        "start": 18,
+                        "end": 21,
+                        "exact_text": "SQL",
+                        "confidence": 0.95,
+                    }
+                ],
+            )
+        ],
+    )
+
+    added = results_for(artifacts.reviewed["train"][0])[-1]
+    assert added["value"]["text"] == "SQL"
+    requested = artifacts.report["requested_operation_counts"]
+    assert requested["add_spans"] == 1
+    assert sum(requested.values()) == 1
+    assert artifacts.report["applied_operation_counts"] == {"add_spans": 1}
+    assert artifacts.document_statuses[0]["review_complete"] is True
+
+
+def test_conflicting_flat_and_nested_review_fields_are_rejected() -> None:
+    review = wrapped_patch("doc-1", delete_span_ids=["s1"])
+    review["delete_span_ids"] = ["s2"]
+
+    with pytest.raises(ReviewMergeError, match="conflicting top-level and nested"):
+        normalize_review_records([review])
+
+
+def test_nested_review_must_be_an_object() -> None:
+    review = patch("doc-1")
+    review["review"] = []
+
+    with pytest.raises(ReviewMergeError, match=r"reviews\[0\]\.review must be an object"):
+        normalize_review_records([review])
 
 
 def test_valid_span_deletion() -> None:

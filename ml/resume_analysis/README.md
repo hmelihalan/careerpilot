@@ -71,7 +71,12 @@ exact duplicate spans are not.
 ## Required review patch schema
 
 A review is an object keyed by top-level `document_id`. `source_index` is audit
-metadata only and is never used for matching.
+metadata only and is never used for matching. The merger accepts both the flat
+patch shape shown below and the Ollama worker envelope used by the checked-in
+review file, where the four operation arrays, `review_complete`, and
+`unresolved_reason_codes` are nested under a `review` object. It normalizes the
+envelope to the flat shape before validation. Conflicting copies of a field in
+both locations are rejected.
 
 ```json
 {
