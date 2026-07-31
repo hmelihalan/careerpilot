@@ -4,12 +4,12 @@ import {
   importedResumeJsonSchema,
   importedResumeSchema,
   toResumeDocument,
-} from "@/src/lib/resume-builder/import-schema";
-import type { ResumeDocument } from "@/src/lib/resume-builder/schema";
+} from "../../lib/resume-builder/import-schema";
+import type { ResumeDocument } from "../../lib/resume-builder/schema";
 import {
   getResumeAnalysisRuntime,
   ResumeAnalysisServiceError,
-} from "@/src/server/resume-analysis/analyze-resume";
+} from "../resume-analysis/analyze-resume";
 
 const ollamaResponseSchema = z.object({
   message: z.object({ content: z.string().min(1) }),

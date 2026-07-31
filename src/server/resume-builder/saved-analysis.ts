@@ -8,19 +8,10 @@ import {
 } from "@/src/lib/resume-analysis/schema";
 import {
   resumeDocumentSchema,
-  type ResumeDocument,
 } from "@/src/lib/resume-builder/schema";
 import { requireUser } from "@/src/server/auth/require-user";
-
-export type SavedResumeAnalysisView = {
-  id: string;
-  fileName: string;
-  analysis: ResumeAnalysis;
-  importedDraft: ResumeDocument | null;
-  appliedImprovementIndexes: number[];
-  draftImportedAt: string | null;
-  updatedAt: string;
-};
+import type { ResumeDocument } from "@/src/lib/resume-builder/schema";
+import type { SavedResumeAnalysisView } from "@/src/types/resume-builder";
 
 export async function saveResumeAnalysis({
   userId,

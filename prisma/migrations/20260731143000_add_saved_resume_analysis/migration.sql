@@ -5,7 +5,7 @@ CREATE TABLE "SavedResumeAnalysis" (
     "fileName" TEXT NOT NULL,
     "analysis" JSONB NOT NULL,
     "importedDraft" JSONB,
-    "appliedImprovementIndexes" INTEGER[] DEFAULT ARRAY[]::INTEGER[],
+    "appliedImprovementIndexes" INTEGER[] NOT NULL DEFAULT ARRAY[]::INTEGER[],
     "draftImportedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

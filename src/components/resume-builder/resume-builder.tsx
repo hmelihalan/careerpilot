@@ -13,6 +13,7 @@ import {
   Lightbulb,
   LoaderCircle,
   Plus,
+  RotateCcw,
   Save,
   Sparkles,
   Trash2,
@@ -25,8 +26,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { AnalysisSuggestions } from "@/src/components/resume-builder/analysis-suggestions";
 import { ResumePreview } from "@/src/components/resume-builder/resume-preview";
+import type { AppliedResumeImprovement } from "@/src/lib/resume-builder/apply-improvement";
 import type { ResumeDocument } from "@/src/lib/resume-builder/schema";
+import type { SavedResumeAnalysisView } from "@/src/types/resume-builder";
 
 type SectionId =
   | "personal"
@@ -164,7 +168,13 @@ function EntryCard({
   );
 }
 
-export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }) {
+export function ResumeBuilder({
+  initialDraft,
+  savedAnalysis,
+}: {
+  initialDraft: ResumeDocument;
+  savedAnalysis: SavedResumeAnalysisView | null;
+}) {
   const [draft, setDraft] = useState(initialDraft);
   const [activeSection, setActiveSection] = useState<SectionId>("personal");
   const [mobileView, setMobileView] = useState<"editor" | "preview">("editor");
@@ -172,6 +182,17 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
   const [aiState, setAiState] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [pdfState, setPdfState] = useState<"idle" | "loading" | "error">("idle");
+  const [analysisImported, setAnalysisImported] = useState(
+    Boolean(savedAnalysis?.draftImportedAt),
+  );
+  const [appliedIndexes, setAppliedIndexes] = useState(
+    savedAnalysis?.appliedImprovementIndexes ?? [],
+  );
+  const [analysisActionError, setAnalysisActionError] = useState<string | null>(null);
+  const [lastAppliedChange, setLastAppliedChange] = useState<{
+    draft: ResumeDocument;
+    index: number;
+  } | null>(null);
   const firstRender = useRef(true);
   const wordCount = countResumeWords(draft);
 
@@ -281,6 +302,70 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
     }
   }
 
+  async function updateSuggestionStatus(
+    action: "import" | "apply" | "unapply",
+    improvementIndex?: number,
+  ) {
+    if (!savedAnalysis) return;
+    try {
+      const response = await fetch("/api/resume-builder/suggestions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          analysisId: savedAnalysis.id,
+          action,
+          improvementIndex,
+        }),
+      });
+      if (!response.ok) throw new Error("Suggestion status could not be saved.");
+      setAnalysisActionError(null);
+    } catch {
+      setAnalysisActionError(
+        "The resume change was saved, but its suggestion status could not be updated.",
+      );
+    }
+  }
+
+  function importAnalyzedResume() {
+    if (!savedAnalysis?.importedDraft) return;
+    setDraft(savedAnalysis.importedDraft);
+    setAnalysisImported(true);
+    setLastAppliedChange(null);
+    setActiveSection("personal");
+    void updateSuggestionStatus("import");
+  }
+
+  function openEditorSection(section: SectionId) {
+    setActiveSection(section);
+    setMobileView("editor");
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("resume-builder-editor")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function applyAnalyzerChange(
+    index: number,
+    change: AppliedResumeImprovement,
+  ) {
+    setLastAppliedChange({ draft, index });
+    setDraft(change.draft);
+    setAppliedIndexes((current) => [...new Set([...current, index])]);
+    openEditorSection(change.section);
+    void updateSuggestionStatus("apply", index);
+  }
+
+  function undoAnalyzerChange() {
+    if (!lastAppliedChange) return;
+    setDraft(lastAppliedChange.draft);
+    setAppliedIndexes((current) =>
+      current.filter((index) => index !== lastAppliedChange.index),
+    );
+    void updateSuggestionStatus("unapply", lastAppliedChange.index);
+    setLastAppliedChange(null);
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
@@ -363,9 +448,32 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
           The PDF could not be generated. Please try again.
         </div>
       ) : null}
+      {lastAppliedChange ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800" role="status">
+          <span>The Analyzer change was applied and will be autosaved.</span>
+          <Button type="button" variant="ghost" size="xs" onClick={undoAnalyzerChange} className="text-emerald-800 hover:bg-emerald-100">
+            <RotateCcw aria-hidden="true" /> Undo
+          </Button>
+        </div>
+      ) : null}
+      {savedAnalysis ? (
+        <AnalysisSuggestions
+          savedAnalysis={savedAnalysis}
+          draft={draft}
+          imported={analysisImported}
+          appliedIndexes={appliedIndexes}
+          error={analysisActionError}
+          onImport={importAnalyzedResume}
+          onApply={applyAnalyzerChange}
+          onOpenSection={(section) => {
+            openEditorSection(section);
+          }}
+        />
+      ) : null}
 
       <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(24rem,0.82fr)_minmax(32rem,1.18fr)]">
         <section
+          id="resume-builder-editor"
           className={cn(
             "min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm",
             mobileView === "preview" && "hidden lg:block",

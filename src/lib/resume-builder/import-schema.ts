@@ -1,8 +1,11 @@
 import { z } from "zod";
 
-import type { ResumeDocument } from "@/src/lib/resume-builder/schema";
+import {
+  resumeDocumentSchema,
+  type ResumeDocument,
+} from "./schema";
 
-const shortText = z.string().max(300);
+const shortText = z.string().max(160);
 const longText = z.string().max(2_000);
 
 export const importedResumeSchema = z
@@ -15,8 +18,8 @@ export const importedResumeSchema = z
         email: shortText,
         phone: shortText,
         location: shortText,
-        website: shortText,
-        linkedin: shortText,
+        website: z.string().max(300),
+        linkedin: z.string().max(300),
       })
       .strict(),
     summary: longText,
@@ -26,10 +29,10 @@ export const importedResumeSchema = z
           role: shortText,
           company: shortText,
           location: shortText,
-          startDate: z.string().max(60),
-          endDate: z.string().max(60),
+          startDate: z.string().max(30),
+          endDate: z.string().max(30),
           current: z.boolean(),
-          bullets: z.array(z.string().max(1_000)).max(8),
+          bullets: z.array(z.string().max(500)).max(8),
         })
         .strict(),
     ).max(12),
@@ -39,8 +42,8 @@ export const importedResumeSchema = z
           school: shortText,
           degree: shortText,
           location: shortText,
-          startDate: z.string().max(60),
-          endDate: z.string().max(60),
+          startDate: z.string().max(30),
+          endDate: z.string().max(30),
           details: longText,
         })
         .strict(),
@@ -50,7 +53,7 @@ export const importedResumeSchema = z
       z
         .object({
           name: shortText,
-          link: z.string().max(500),
+          link: z.string().max(300),
           description: longText,
         })
         .strict(),
@@ -60,7 +63,7 @@ export const importedResumeSchema = z
         .object({
           name: shortText,
           issuer: shortText,
-          date: z.string().max(60),
+          date: z.string().max(30),
         })
         .strict(),
     ).max(12),
@@ -79,7 +82,7 @@ export function toResumeDocument(
 ): ResumeDocument {
   const title = fileName.replace(/\.[^.]+$/, "").trim() || "Imported Resume";
 
-  return {
+  return resumeDocumentSchema.parse({
     version: 1,
     title: title.slice(0, 120),
     language: imported.language,
@@ -102,7 +105,7 @@ export function toResumeDocument(
       ...item,
       id: createEntryId("certification", index),
     })),
-  };
+  });
 }
 
 export const importedResumeJsonSchema = z.toJSONSchema(importedResumeSchema, {

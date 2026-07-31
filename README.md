@@ -125,12 +125,12 @@ The API key remains server-only. Do not prefix it with `NEXT_PUBLIC_`.
 
 The analyzer accepts text-based PDF and TXT files up to 4 MB, keeping uploads
 below Vercel's 4.5 MB Function payload limit. Files are handled
-only for the active request and are not written to application storage. The
-server extracts text, sends it to the configured model with a strict JSON
-schema, validates the response, and returns scores and grounded recommendations
-to the browser. Local development uses Ollama. On Vercel, extracted resume text
-is sent to Groq for the active analysis request; the original file is not
-persisted by CareerPilot.
+only for the active request. The original file and raw extracted text are not
+written to application storage. The server extracts text, sends it to the
+configured model with a strict JSON schema, validates the response, and saves
+the latest structured analysis and editable resume draft to the signed-in
+user's account. Local development uses Ollama. On Vercel, extracted resume text
+is sent to Groq for the active request.
 
 Scanned PDFs without a readable text layer currently require OCR before upload.
 The analyzer can flag likely OCR errors in extracted text, but it does not
@@ -143,6 +143,13 @@ it to the Clerk user ID from the server session. The initial template is a
 single-column ATS layout with English and Turkish section headings. AI buttons
 use the same local Ollama or deployed Groq configuration as Resume Analyzer and
 are instructed to rewrite only facts already present in the draft.
+
+The latest Resume Analyzer result is available inside the Builder. Users can
+compare the current draft with the uploaded resume before replacing it, review
+each recommendation as a before/after change, apply grounded text changes one
+at a time, and undo the latest applied suggestion. Suggestions that cannot be
+mapped safely open the relevant editor section instead of changing content
+automatically.
 
 PDF downloads are rendered on the server with selectable text and an embedded
 Roboto Latin Extended font, so Turkish characters remain intact. Apply the

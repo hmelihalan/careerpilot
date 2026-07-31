@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type DragEvent } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   ArrowRight,
@@ -28,6 +29,8 @@ type AnalysisResponse = {
     fileName: string;
     model: string;
     provider: "groq" | "ollama";
+    savedAnalysisId: string;
+    builderReady: boolean;
   };
 };
 
@@ -207,12 +210,13 @@ export function ResumeAnalyzer({
             <h2 className="mt-4 text-base font-semibold">Private by design</h2>
             <p className="mt-2 text-sm leading-6 text-slate-300">
               {analysisMode === "cloud"
-                ? "CareerPilot does not save the uploaded document. Extracted resume text is sent to the configured cloud AI only for this analysis."
-                : "Your file is processed for this request and sent only to your locally configured Ollama model. CareerPilot does not save the uploaded document."}
+                ? "The original file and raw extracted text are not saved. Your structured analysis and editable resume fields are saved to your account; extracted text is sent to the configured cloud AI for this request."
+                : "The original file and raw extracted text are not saved. Your structured analysis and editable resume fields are saved to your account and processed with your local Ollama model."}
             </p>
             <ul className="mt-4 space-y-2 text-xs text-slate-300">
               {[
                 "Structured, evidence-based feedback",
+                "Saved to your account for Resume Builder",
                 "No training dataset required",
                 analysisMode === "cloud"
                   ? "Resume text is processed by the configured cloud AI"
@@ -270,8 +274,8 @@ export function ResumeAnalyzer({
               Reading structure, impact, and ATS readiness
             </h2>
             <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-              The analysis model is checking each section and grounding
-              suggestions in the uploaded resume.
+              The model is checking each section, grounding suggestions, and
+              preparing an editable copy for Resume Builder.
             </p>
           </CardContent>
         </Card>
@@ -306,6 +310,12 @@ function AnalysisResults({
                   ? "Cloud AI analysis"
                   : "Local AI analysis"}
               </Badge>
+              <Badge variant="outline" className="border-emerald-200 text-emerald-700">
+                <CheckCircle2 aria-hidden="true" />
+                {metadata.builderReady
+                  ? "Saved and ready for Builder"
+                  : "Suggestions saved"}
+              </Badge>
               <span className="text-xs text-slate-400">
                 {metadata.model} · {metadata.characterCount.toLocaleString()} characters
               </span>
@@ -330,14 +340,23 @@ function AnalysisResults({
               ) : null}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onReset}
-            className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-          >
-            <RefreshCw className="size-4" aria-hidden="true" />
-            New analysis
-          </button>
+          <div className="flex shrink-0 flex-col gap-2">
+            <Link
+              href={`/resume-builder?analysis=${metadata.savedAnalysisId}`}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-3 text-sm font-medium text-white transition-colors hover:bg-indigo-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+            >
+              Open in Resume Builder
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+            <button
+              type="button"
+              onClick={onReset}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            >
+              <RefreshCw className="size-4" aria-hidden="true" />
+              New analysis
+            </button>
+          </div>
         </CardContent>
       </Card>
 

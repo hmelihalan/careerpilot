@@ -2,9 +2,13 @@ import { FilePenLine, Sparkles } from "lucide-react";
 
 import { ResumeBuilder } from "@/src/components/resume-builder/resume-builder";
 import { getResumeDraftForCurrentUser } from "@/src/server/resume-builder/get-resume-draft";
+import { getSavedResumeAnalysisForCurrentUser } from "@/src/server/resume-builder/saved-analysis";
 
 export default async function ResumeBuilderPage() {
-  const initialDraft = await getResumeDraftForCurrentUser();
+  const [initialDraft, savedAnalysis] = await Promise.all([
+    getResumeDraftForCurrentUser(),
+    getSavedResumeAnalysisForCurrentUser(),
+  ]);
   const aiMode =
     (process.env.RESUME_ANALYSIS_PROVIDER ??
       (process.env.VERCEL ? "groq" : "ollama")) === "groq"
@@ -33,7 +37,7 @@ export default async function ResumeBuilderPage() {
         </div>
       </section>
 
-      <ResumeBuilder initialDraft={initialDraft} />
+      <ResumeBuilder initialDraft={initialDraft} savedAnalysis={savedAnalysis} />
     </div>
   );
 }
