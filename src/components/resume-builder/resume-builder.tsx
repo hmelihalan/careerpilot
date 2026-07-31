@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ArrowDown,
@@ -171,12 +172,16 @@ function EntryCard({
 }
 
 export function ResumeBuilder({
+  initialResumeId,
   initialDraft,
   savedAnalysis,
 }: {
+  initialResumeId: string | null;
   initialDraft: ResumeDocument;
   savedAnalysis: SavedResumeAnalysisView | null;
 }) {
+  const router = useRouter();
+  const [resumeId, setResumeId] = useState(initialResumeId);
   const [draft, setDraft] = useState(initialDraft);
   const [activeSection, setActiveSection] = useState<SectionId>("personal");
   const [mobileView, setMobileView] = useState<"editor" | "preview">("editor");
@@ -214,10 +219,15 @@ export function ResumeBuilder({
         const response = await fetch("/api/resume-builder", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(draft),
+          body: JSON.stringify({ resumeId, draft }),
           signal: controller.signal,
         });
         if (!response.ok) throw new Error("Save failed");
+        const result = (await response.json()) as { resumeId: string };
+        if (!resumeId) {
+          setResumeId(result.resumeId);
+          router.replace(`/resume-builder?resume=${result.resumeId}`);
+        }
         setSaveState("saved");
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -229,7 +239,7 @@ export function ResumeBuilder({
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [draft]);
+  }, [draft, resumeId, router]);
 
   function updateContact(field: keyof ResumeDocument["contact"], value: string) {
     setDraft((current) => ({

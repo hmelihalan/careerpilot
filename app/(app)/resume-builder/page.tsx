@@ -1,14 +1,24 @@
-import { FilePenLine, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ArrowLeft, FilePenLine, Sparkles } from "lucide-react";
 
 import { ResumeBuilder } from "@/src/components/resume-builder/resume-builder";
 import { getResumeDraftForCurrentUser } from "@/src/server/resume-builder/get-resume-draft";
 import { getSavedResumeAnalysisForCurrentUser } from "@/src/server/resume-builder/saved-analysis";
 
-export default async function ResumeBuilderPage() {
-  const [initialDraft, savedAnalysis] = await Promise.all([
-    getResumeDraftForCurrentUser(),
+export default async function ResumeBuilderPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ resume?: string }>;
+}) {
+  const { resume: resumeId } = await searchParams;
+  const [currentResume, savedAnalysis] = await Promise.all([
+    getResumeDraftForCurrentUser(resumeId),
     getSavedResumeAnalysisForCurrentUser(),
   ]);
+
+  if (!currentResume) notFound();
+
   const aiMode =
     (process.env.RESUME_ANALYSIS_PROVIDER ??
       (process.env.VERCEL ? "groq" : "ollama")) === "groq"
@@ -19,6 +29,13 @@ export default async function ResumeBuilderPage() {
     <div className="min-w-0 space-y-5">
       <section className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
+          <Link
+            href="/resumes"
+            className="mb-3 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 transition-colors hover:text-indigo-600"
+          >
+            <ArrowLeft className="size-3.5" aria-hidden="true" />
+            All resumes
+          </Link>
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-indigo-600">
             <FilePenLine className="size-3.5" aria-hidden="true" />
             Free ATS resume
@@ -37,7 +54,12 @@ export default async function ResumeBuilderPage() {
         </div>
       </section>
 
-      <ResumeBuilder initialDraft={initialDraft} savedAnalysis={savedAnalysis} />
+      <ResumeBuilder
+        key={currentResume.id ?? "new-resume"}
+        initialResumeId={currentResume.id}
+        initialDraft={currentResume.draft}
+        savedAnalysis={savedAnalysis}
+      />
     </div>
   );
 }
