@@ -9,6 +9,7 @@ import {
   Eye,
   Download,
   FilePenLine,
+  FileSearch,
   GraduationCap,
   Lightbulb,
   LoaderCircle,
@@ -27,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { AnalysisSuggestions } from "@/src/components/resume-builder/analysis-suggestions";
+import { OriginalPdfPreview } from "@/src/components/resume-builder/original-pdf-preview";
 import { ResumePreview } from "@/src/components/resume-builder/resume-preview";
 import type { AppliedResumeImprovement } from "@/src/lib/resume-builder/apply-improvement";
 import type { ResumeDocument } from "@/src/lib/resume-builder/schema";
@@ -182,6 +184,9 @@ export function ResumeBuilder({
   const [aiState, setAiState] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [pdfState, setPdfState] = useState<"idle" | "loading" | "error">("idle");
+  const [previewMode, setPreviewMode] = useState<"original" | "builder">(
+    savedAnalysis?.hasOriginalPdf ? "original" : "builder",
+  );
   const [analysisImported, setAnalysisImported] = useState(
     Boolean(savedAnalysis?.draftImportedAt),
   );
@@ -352,6 +357,7 @@ export function ResumeBuilder({
     setLastAppliedChange({ draft, index });
     setDraft(change.draft);
     setAppliedIndexes((current) => [...new Set([...current, index])]);
+    setPreviewMode("builder");
     openEditorSection(change.section);
     void updateSuggestionStatus("apply", index);
   }
@@ -713,28 +719,65 @@ export function ResumeBuilder({
         >
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900">Live ATS preview</h2>
+              <h2 className="text-sm font-semibold text-slate-900">
+                {previewMode === "original" ? "Original resume" : "Live ATS preview"}
+              </h2>
               <p className="text-[11px] text-slate-500">
-                Roboto · 10.25 pt · single-column · selectable text
+                {previewMode === "original"
+                  ? "Uploaded PDF · highlighted Analyzer evidence"
+                  : "Roboto · 10.25 pt · single-column · selectable text"}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "rounded-md border px-2 py-1 text-[10px] font-medium",
-                  wordCount > 700
-                    ? "border-amber-200 bg-amber-50 text-amber-700"
-                    : "border-slate-200 bg-white text-slate-500",
-                )}
-                title="One page is a useful target for most early-career resumes; the exported PDF may use more pages when needed."
-              >
-                {wordCount} words{wordCount > 700 ? " · review length" : ""}
-              </span>
+              {previewMode === "builder" ? (
+                <span
+                  className={cn(
+                    "rounded-md border px-2 py-1 text-[10px] font-medium",
+                    wordCount > 700
+                      ? "border-amber-200 bg-amber-50 text-amber-700"
+                      : "border-slate-200 bg-white text-slate-500",
+                  )}
+                  title="One page is a useful target for most early-career resumes; the exported PDF may use more pages when needed."
+                >
+                  {wordCount} words{wordCount > 700 ? " · review length" : ""}
+                </span>
+              ) : null}
               <ChevronDown className="size-4 text-slate-400 lg:hidden" aria-hidden="true" />
             </div>
           </div>
+          {savedAnalysis?.hasOriginalPdf ? (
+            <div className="mb-3 grid grid-cols-2 rounded-lg bg-slate-300/70 p-0.5">
+              <button
+                type="button"
+                onClick={() => setPreviewMode("original")}
+                className={cn(
+                  "inline-flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-slate-600",
+                  previewMode === "original" && "bg-white text-slate-950 shadow-sm",
+                )}
+              >
+                <FileSearch className="size-3.5" aria-hidden="true" /> Original PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => setPreviewMode("builder")}
+                className={cn(
+                  "inline-flex h-8 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-medium text-slate-600",
+                  previewMode === "builder" && "bg-white text-slate-950 shadow-sm",
+                )}
+              >
+                <Eye className="size-3.5" aria-hidden="true" /> Builder preview
+              </button>
+            </div>
+          ) : null}
           <div className="scrollbar-thin max-h-[calc(100vh-10rem)] overflow-auto rounded-lg lg:sticky lg:top-20">
-            <ResumePreview draft={draft} />
+            {previewMode === "original" && savedAnalysis?.hasOriginalPdf ? (
+              <OriginalPdfPreview
+                analysisId={savedAnalysis.id}
+                improvements={savedAnalysis.analysis.improvements}
+              />
+            ) : (
+              <ResumePreview draft={draft} />
+            )}
           </div>
         </section>
       </div>

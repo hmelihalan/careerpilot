@@ -33,7 +33,12 @@ export async function GET(request: Request) {
     return errorResponse("The original PDF is not available.", "not_found", 404);
   }
 
-  const safeName = saved.fileName.replace(/[\r\n\"]/g, "");
+  const safeName =
+    saved.fileName
+      .normalize("NFKD")
+      .replace(/[^a-zA-Z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 100) || "resume.pdf";
   return new Response(saved.originalFile, {
     headers: {
       "Cache-Control": "private, no-store",

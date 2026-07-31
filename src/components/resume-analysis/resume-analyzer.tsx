@@ -210,12 +210,13 @@ export function ResumeAnalyzer({
             <h2 className="mt-4 text-base font-semibold">Private by design</h2>
             <p className="mt-2 text-sm leading-6 text-slate-300">
               {analysisMode === "cloud"
-                ? "The original file and raw extracted text are not saved. Your structured analysis and editable resume fields are saved to your account; extracted text is sent to the configured cloud AI for this request."
-                : "The original file and raw extracted text are not saved. Your structured analysis and editable resume fields are saved to your account and processed with your local Ollama model."}
+                ? "PDF uploads, structured analysis, and editable resume fields are saved privately to your account for highlighted Builder review. Raw extracted text is not saved; it is sent to the configured cloud AI for this request."
+                : "PDF uploads, structured analysis, and editable resume fields are saved privately to your account for highlighted Builder review. Raw extracted text is not saved and processing uses your local Ollama model."}
             </p>
             <ul className="mt-4 space-y-2 text-xs text-slate-300">
               {[
                 "Structured, evidence-based feedback",
+                "Original PDF available only to your signed-in account",
                 "Saved to your account for Resume Builder",
                 "No training dataset required",
                 analysisMode === "cloud"

@@ -124,13 +124,12 @@ The API key remains server-only. Do not prefix it with `NEXT_PUBLIC_`.
 ## Resume analysis
 
 The analyzer accepts text-based PDF and TXT files up to 4 MB, keeping uploads
-below Vercel's 4.5 MB Function payload limit. Files are handled
-only for the active request. The original file and raw extracted text are not
-written to application storage. The server extracts text, sends it to the
-configured model with a strict JSON schema, validates the response, and saves
-the latest structured analysis and editable resume draft to the signed-in
-user's account. Local development uses Ollama. On Vercel, extracted resume text
-is sent to Groq for the active request.
+below Vercel's 4.5 MB Function payload limit. Raw extracted text is not written
+to application storage. For PDF uploads, the latest original PDF is saved with
+the structured analysis and editable resume draft so the signed-in user can
+review highlighted evidence in Resume Builder. The file is served only through
+a user-scoped, no-store endpoint. Local development uses Ollama. On Vercel,
+extracted resume text is sent to Groq for the active request.
 
 Scanned PDFs without a readable text layer currently require OCR before upload.
 The analyzer can flag likely OCR errors in extracted text, but it does not
@@ -150,6 +149,12 @@ each recommendation as a before/after change, apply grounded text changes one
 at a time, and undo the latest applied suggestion. Suggestions that cannot be
 mapped safely open the relevant editor section instead of changing content
 automatically.
+
+For PDF analyses, the preview can switch between the original uploaded pages
+and the generated Builder resume. Mozilla PDF.js renders the original pages and
+uses the PDF text layer to locate Analyzer evidence. Matched areas are
+highlighted by recommendation priority; unmatched evidence remains available in
+the suggestions panel without guessing a page location.
 
 PDF downloads are rendered on the server with selectable text and an embedded
 Roboto Latin Extended font, so Turkish characters remain intact. Apply the
