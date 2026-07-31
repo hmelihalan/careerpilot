@@ -106,3 +106,17 @@ model ResumeDraft {
 
   @@index([userId])
 }
+
+model SavedResumeAnalysis {
+  id                        String    @id @default(cuid())
+  userId                    String    @unique
+  fileName                  String
+  analysis                  Json
+  importedDraft             Json?
+  appliedImprovementIndexes Int[]     @default([])
+  draftImportedAt           DateTime?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  @@index([userId])
+}
