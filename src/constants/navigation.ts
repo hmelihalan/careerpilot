@@ -1,6 +1,7 @@
 import {
   BarChart3,
   BriefcaseBusiness,
+  FilePenLine,
   FileSearch,
   LayoutDashboard,
   Settings,
@@ -39,6 +40,7 @@ export const appNavigation: Record<AppMode, readonly AppNavigationItem[]> = {
       href: appRoutes.authenticated.applications,
       icon: BriefcaseBusiness,
     },
+    { name: "Resume Builder", href: "/resume-builder", icon: FilePenLine },
     { name: "Resume Analyzer", href: "/ai-studio", icon: FileSearch },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
@@ -50,6 +52,7 @@ export const appNavigation: Record<AppMode, readonly AppNavigationItem[]> = {
       href: appRoutes.demo.applications,
       icon: BriefcaseBusiness,
     },
+    { name: "Resume Builder", icon: FilePenLine, preview: true },
     { name: "Resume Analyzer", icon: FileSearch, preview: true },
     { name: "Analytics", icon: BarChart3, preview: true },
     { name: "Settings", icon: Settings, preview: true },

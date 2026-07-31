@@ -7,6 +7,7 @@ describe("appNavigation", () => {
     expect(appNavigation.authenticated.map((item) => item.href)).toEqual([
       "/dashboard",
       "/applications",
+      "/resume-builder",
       "/ai-studio",
       "/analytics",
       "/settings",
