@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
   Check,
   ChevronDown,
   Eye,
@@ -56,6 +58,36 @@ function createId(): string {
   return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`;
 }
 
+function moveArrayItem<T>(items: T[], from: number, to: number): T[] {
+  if (to < 0 || to >= items.length) return items;
+  const next = [...items];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
+function countResumeWords(draft: ResumeDocument): number {
+  const text = [
+    draft.contact.headline,
+    draft.summary,
+    ...draft.experience.flatMap((item) => [
+      item.role,
+      item.company,
+      ...item.bullets,
+    ]),
+    ...draft.education.flatMap((item) => [
+      item.degree,
+      item.school,
+      item.details,
+    ]),
+    ...draft.skills,
+    ...draft.projects.flatMap((item) => [item.name, item.description]),
+    ...draft.certifications.flatMap((item) => [item.name, item.issuer]),
+  ].join(" ");
+
+  return text.trim() ? text.trim().split(/\s+/).length : 0;
+}
+
 function FormField({
   label,
   children,
@@ -76,26 +108,56 @@ function FormField({
 function EntryCard({
   title,
   onRemove,
+  onMoveUp,
+  onMoveDown,
   children,
 }: {
   title: string;
   onRemove: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   children: ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="truncate text-sm font-semibold text-slate-900">{title}</h3>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={onRemove}
-          aria-label={`Remove ${title}`}
-          className="text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-        >
-          <Trash2 aria-hidden="true" />
-        </Button>
+        <div className="flex items-center gap-0.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onMoveUp}
+            disabled={!onMoveUp}
+            aria-label={`Move ${title} up`}
+            title="Move up"
+            className="text-slate-400"
+          >
+            <ArrowUp aria-hidden="true" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onMoveDown}
+            disabled={!onMoveDown}
+            aria-label={`Move ${title} down`}
+            title="Move down"
+            className="text-slate-400"
+          >
+            <ArrowDown aria-hidden="true" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onRemove}
+            aria-label={`Remove ${title}`}
+            className="text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+          >
+            <Trash2 aria-hidden="true" />
+          </Button>
+        </div>
       </div>
       {children}
     </div>
@@ -111,6 +173,7 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
   const [aiError, setAiError] = useState<string | null>(null);
   const [pdfState, setPdfState] = useState<"idle" | "loading" | "error">("idle");
   const firstRender = useRef(true);
+  const wordCount = countResumeWords(draft);
 
   useEffect(() => {
     if (firstRender.current) {
@@ -408,7 +471,13 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
                 <div className="mt-5 space-y-4">
                   {draft.experience.length === 0 ? <EmptyState label="No experience added yet." /> : null}
                   {draft.experience.map((item, index) => (
-                    <EntryCard key={item.id} title={item.role || `Experience ${index + 1}`} onRemove={() => setDraft((current) => ({ ...current, experience: current.experience.filter((entry) => entry.id !== item.id) }))}>
+                    <EntryCard
+                      key={item.id}
+                      title={item.role || `Experience ${index + 1}`}
+                      onMoveUp={index > 0 ? () => setDraft((current) => ({ ...current, experience: moveArrayItem(current.experience, index, index - 1) })) : undefined}
+                      onMoveDown={index < draft.experience.length - 1 ? () => setDraft((current) => ({ ...current, experience: moveArrayItem(current.experience, index, index + 1) })) : undefined}
+                      onRemove={() => setDraft((current) => ({ ...current, experience: current.experience.filter((entry) => entry.id !== item.id) }))}
+                    >
                       <div className="grid gap-4 sm:grid-cols-2">
                         {(["role", "company", "location", "startDate", "endDate"] as const).map((field) => (
                           <FormField key={field} label={{ role: "Role", company: "Company", location: "Location", startDate: "Start date", endDate: "End date" }[field]} className={field === "role" || field === "company" ? "sm:col-span-2" : undefined}>
@@ -442,7 +511,13 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
                 <div className="mt-5 space-y-4">
                   {draft.education.length === 0 ? <EmptyState label="No education added yet." /> : null}
                   {draft.education.map((item, index) => (
-                    <EntryCard key={item.id} title={item.degree || `Education ${index + 1}`} onRemove={() => setDraft((current) => ({ ...current, education: current.education.filter((entry) => entry.id !== item.id) }))}>
+                    <EntryCard
+                      key={item.id}
+                      title={item.degree || `Education ${index + 1}`}
+                      onMoveUp={index > 0 ? () => setDraft((current) => ({ ...current, education: moveArrayItem(current.education, index, index - 1) })) : undefined}
+                      onMoveDown={index < draft.education.length - 1 ? () => setDraft((current) => ({ ...current, education: moveArrayItem(current.education, index, index + 1) })) : undefined}
+                      onRemove={() => setDraft((current) => ({ ...current, education: current.education.filter((entry) => entry.id !== item.id) }))}
+                    >
                       <div className="grid gap-4 sm:grid-cols-2">
                         {(["degree", "school", "location", "startDate", "endDate"] as const).map((field) => (
                           <FormField key={field} label={{ degree: "Degree / program", school: "School", location: "Location", startDate: "Start date", endDate: "End date" }[field]} className={field === "degree" || field === "school" ? "sm:col-span-2" : undefined}>
@@ -475,7 +550,13 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
                 <div className="mt-5 space-y-4">
                   {draft.projects.length === 0 ? <EmptyState label="No projects added yet." /> : null}
                   {draft.projects.map((item, index) => (
-                    <EntryCard key={item.id} title={item.name || `Project ${index + 1}`} onRemove={() => setDraft((current) => ({ ...current, projects: current.projects.filter((entry) => entry.id !== item.id) }))}>
+                    <EntryCard
+                      key={item.id}
+                      title={item.name || `Project ${index + 1}`}
+                      onMoveUp={index > 0 ? () => setDraft((current) => ({ ...current, projects: moveArrayItem(current.projects, index, index - 1) })) : undefined}
+                      onMoveDown={index < draft.projects.length - 1 ? () => setDraft((current) => ({ ...current, projects: moveArrayItem(current.projects, index, index + 1) })) : undefined}
+                      onRemove={() => setDraft((current) => ({ ...current, projects: current.projects.filter((entry) => entry.id !== item.id) }))}
+                    >
                       <div className="space-y-4">
                         <FormField label="Project name"><Input className={inputClassName} value={item.name} maxLength={160} onChange={(event) => setDraft((current) => ({ ...current, projects: current.projects.map((entry) => entry.id === item.id ? { ...entry, name: event.target.value } : entry) }))} /></FormField>
                         <FormField label="Link"><Input className={inputClassName} value={item.link} maxLength={300} onChange={(event) => setDraft((current) => ({ ...current, projects: current.projects.map((entry) => entry.id === item.id ? { ...entry, link: event.target.value } : entry) }))} placeholder="github.com/username/project" /></FormField>
@@ -493,7 +574,13 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
                 <div className="mt-5 space-y-4">
                   {draft.certifications.length === 0 ? <EmptyState label="No certifications added yet." /> : null}
                   {draft.certifications.map((item, index) => (
-                    <EntryCard key={item.id} title={item.name || `Certification ${index + 1}`} onRemove={() => setDraft((current) => ({ ...current, certifications: current.certifications.filter((entry) => entry.id !== item.id) }))}>
+                    <EntryCard
+                      key={item.id}
+                      title={item.name || `Certification ${index + 1}`}
+                      onMoveUp={index > 0 ? () => setDraft((current) => ({ ...current, certifications: moveArrayItem(current.certifications, index, index - 1) })) : undefined}
+                      onMoveDown={index < draft.certifications.length - 1 ? () => setDraft((current) => ({ ...current, certifications: moveArrayItem(current.certifications, index, index + 1) })) : undefined}
+                      onRemove={() => setDraft((current) => ({ ...current, certifications: current.certifications.filter((entry) => entry.id !== item.id) }))}
+                    >
                       <div className="grid gap-4 sm:grid-cols-2">
                         {(["name", "issuer", "date"] as const).map((field) => (
                           <FormField key={field} label={{ name: "Certification", issuer: "Issuer", date: "Date" }[field]} className={field === "name" ? "sm:col-span-2" : undefined}>
@@ -519,9 +606,24 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Live ATS preview</h2>
-              <p className="text-[11px] text-slate-500">Single-column, selectable text</p>
+              <p className="text-[11px] text-slate-500">
+                Roboto · 10.25 pt · single-column · selectable text
+              </p>
             </div>
-            <ChevronDown className="size-4 text-slate-400 lg:hidden" aria-hidden="true" />
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "rounded-md border px-2 py-1 text-[10px] font-medium",
+                  wordCount > 700
+                    ? "border-amber-200 bg-amber-50 text-amber-700"
+                    : "border-slate-200 bg-white text-slate-500",
+                )}
+                title="One page is a useful target for most early-career resumes; the exported PDF may use more pages when needed."
+              >
+                {wordCount} words{wordCount > 700 ? " · review length" : ""}
+              </span>
+              <ChevronDown className="size-4 text-slate-400 lg:hidden" aria-hidden="true" />
+            </div>
           </div>
           <div className="scrollbar-thin max-h-[calc(100vh-10rem)] overflow-auto rounded-lg lg:sticky lg:top-20">
             <ResumePreview draft={draft} />
