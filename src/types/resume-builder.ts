@@ -11,3 +11,14 @@ export type SavedResumeAnalysisView = {
   draftImportedAt: string | null;
   updatedAt: string;
 };
+
+export type ResumeListItem = {
+  id: string;
+  title: string;
+  language: ResumeDocument["language"];
+  fullName: string;
+  headline: string;
+  completedSections: number;
+  totalSections: number;
+  updatedAt: string;
+};

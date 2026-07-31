@@ -5,9 +5,9 @@ CareerPilot is a Next.js application for tracking job applications, status histo
 The protected Resume Analyzer accepts PDF or TXT resumes, extracts readable
 text without storing the upload, and returns structured feedback from Ollama
 locally or Groq when deployed to Vercel. The protected Resume Builder stores
-one structured draft per account, provides grounded AI writing assistance,
-shows a live ATS preview, and generates a text-based PDF. Application notes
-CRUD remains outside the current implementation.
+multiple structured drafts per account, provides grounded AI writing
+assistance, shows a live ATS preview, and generates a text-based PDF.
+Application notes CRUD remains outside the current implementation.
 
 ## Requirements
 
@@ -117,7 +117,8 @@ The API key remains server-only. Do not prefix it with `NEXT_PUBLIC_`.
 
 - `/demo` is public and uses local sample data only.
 - `/dashboard`, `/applications`, and other application routes are protected by Clerk.
-- `/resume-builder` provides a persistent ATS resume editor for signed-in users.
+- `/resumes` lists every saved resume for the signed-in user.
+- `/resume-builder` provides the persistent ATS resume editor for a selected resume.
 - `/ai-studio` provides resume analysis for signed-in users.
 - Server-side data access derives `userId` from Clerk and scopes user-owned records accordingly.
 
@@ -137,11 +138,14 @@ rewrite the source document or use the checked-in ML dataset at runtime.
 
 ## Resume Builder
 
-The builder saves a validated structured draft to PostgreSQL and always scopes
-it to the Clerk user ID from the server session. The initial template is a
-single-column ATS layout with English and Turkish section headings. AI buttons
-use the same local Ollama or deployed Groq configuration as Resume Analyzer and
-are instructed to rewrite only facts already present in the draft.
+The My Resumes dashboard lists each user-owned draft, creates separate resumes
+for different roles, and lets users reopen or delete a saved version. The
+builder saves every validated structured draft to PostgreSQL and always scopes
+reads, updates, and deletes to the Clerk user ID from the server session. The
+initial template is a single-column ATS layout with English and Turkish section
+headings. AI buttons use the same local Ollama or deployed Groq configuration
+as Resume Analyzer and are instructed to rewrite only facts already present in
+the draft.
 
 The latest Resume Analyzer result is available inside the Builder. Users can
 compare the current draft with the uploaded resume before replacing it, review

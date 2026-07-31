@@ -111,6 +111,7 @@ export function MobileAppNavigation({ mode, user }: MobileAppNavigationProps) {
                 pathname,
                 item.href,
                 dashboardHref,
+                item.activePrefixes,
               );
 
               return (

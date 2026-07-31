@@ -1,8 +1,8 @@
 import {
   BarChart3,
   BriefcaseBusiness,
-  FilePenLine,
   FileSearch,
+  Files,
   LayoutDashboard,
   Settings,
   type LucideIcon,
@@ -26,6 +26,7 @@ export type AppNavigationItem = {
   href?: string;
   icon: LucideIcon;
   preview?: boolean;
+  activePrefixes?: readonly string[];
 };
 
 export const appNavigation: Record<AppMode, readonly AppNavigationItem[]> = {
@@ -40,7 +41,12 @@ export const appNavigation: Record<AppMode, readonly AppNavigationItem[]> = {
       href: appRoutes.authenticated.applications,
       icon: BriefcaseBusiness,
     },
-    { name: "Resume Builder", href: "/resume-builder", icon: FilePenLine },
+    {
+      name: "My Resumes",
+      href: "/resumes",
+      icon: Files,
+      activePrefixes: ["/resume-builder"],
+    },
     { name: "Resume Analyzer", href: "/ai-studio", icon: FileSearch },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
     { name: "Settings", href: "/settings", icon: Settings },
@@ -52,7 +58,7 @@ export const appNavigation: Record<AppMode, readonly AppNavigationItem[]> = {
       href: appRoutes.demo.applications,
       icon: BriefcaseBusiness,
     },
-    { name: "Resume Builder", icon: FilePenLine, preview: true },
+    { name: "My Resumes", icon: Files, preview: true },
     { name: "Resume Analyzer", icon: FileSearch, preview: true },
     { name: "Analytics", icon: BarChart3, preview: true },
     { name: "Settings", icon: Settings, preview: true },
@@ -63,10 +69,17 @@ export function isAppNavigationItemActive(
   pathname: string,
   href: string,
   dashboardHref: string,
+  activePrefixes: readonly string[] = [],
 ): boolean {
   if (href === dashboardHref) {
     return pathname === href;
   }
 
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return (
+    pathname === href ||
+    pathname.startsWith(`${href}/`) ||
+    activePrefixes.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+    )
+  );
 }

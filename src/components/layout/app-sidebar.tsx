@@ -77,6 +77,7 @@ export function AppSidebar({ mode, user }: AppSidebarProps) {
               pathname,
               item.href,
               dashboardHref,
+              item.activePrefixes,
             );
 
             return (
