@@ -5,6 +5,7 @@ import {
   Check,
   ChevronDown,
   Eye,
+  Download,
   FilePenLine,
   GraduationCap,
   Lightbulb,
@@ -108,6 +109,7 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
   const [aiState, setAiState] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [pdfState, setPdfState] = useState<"idle" | "loading" | "error">("idle");
   const firstRender = useRef(true);
 
   useEffect(() => {
@@ -188,6 +190,34 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
     }
   }
 
+  async function downloadPdf() {
+    setPdfState("loading");
+    try {
+      const response = await fetch("/api/resume-builder/pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: { message?: string } };
+        throw new Error(payload.error?.message ?? "The PDF could not be generated.");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${draft.title || "resume"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setPdfState("idle");
+    } catch {
+      setPdfState("error");
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
@@ -234,6 +264,14 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
               ? "Saved"
               : "Could not save"}
         </span>
+        <Button type="button" size="sm" onClick={downloadPdf} disabled={pdfState === "loading"}>
+          {pdfState === "loading" ? (
+            <LoaderCircle className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Download aria-hidden="true" />
+          )}
+          {pdfState === "loading" ? "Preparing…" : "Download PDF"}
+        </Button>
         <div className="grid grid-cols-2 rounded-lg bg-slate-100 p-0.5 lg:hidden">
           <button
             type="button"
@@ -257,6 +295,11 @@ export function ResumeBuilder({ initialDraft }: { initialDraft: ResumeDocument }
           </button>
         </div>
       </div>
+      {pdfState === "error" ? (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700" role="alert">
+          The PDF could not be generated. Please try again.
+        </div>
+      ) : null}
 
       <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(24rem,0.82fr)_minmax(32rem,1.18fr)]">
         <section

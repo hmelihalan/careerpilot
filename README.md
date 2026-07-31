@@ -4,8 +4,10 @@ CareerPilot is a Next.js application for tracking job applications, status histo
 
 The protected Resume Analyzer accepts PDF or TXT resumes, extracts readable
 text without storing the upload, and returns structured feedback from Ollama
-locally or Groq when deployed to Vercel. Notes CRUD and durable resume storage
-are not implemented.
+locally or Groq when deployed to Vercel. The protected Resume Builder stores
+one structured draft per account, provides grounded AI writing assistance,
+shows a live ATS preview, and generates a text-based PDF. Application notes
+CRUD remains outside the current implementation.
 
 ## Requirements
 
@@ -13,8 +15,8 @@ are not implemented.
 - pnpm
 - Clerk application credentials
 - A PostgreSQL database such as Neon
-- Ollama with the `qwen3:4b` model for local resume analysis
-- A Groq API key for deployed resume analysis
+- Ollama with the `qwen3:4b` model for local resume analysis and writing help
+- A Groq API key for deployed resume analysis and writing help
 
 ## Environment setup
 
@@ -115,6 +117,7 @@ The API key remains server-only. Do not prefix it with `NEXT_PUBLIC_`.
 
 - `/demo` is public and uses local sample data only.
 - `/dashboard`, `/applications`, and other application routes are protected by Clerk.
+- `/resume-builder` provides a persistent ATS resume editor for signed-in users.
 - `/ai-studio` provides resume analysis for signed-in users.
 - Server-side data access derives `userId` from Clerk and scopes user-owned records accordingly.
 
@@ -132,3 +135,19 @@ persisted by CareerPilot.
 Scanned PDFs without a readable text layer currently require OCR before upload.
 The analyzer can flag likely OCR errors in extracted text, but it does not
 rewrite the source document or use the checked-in ML dataset at runtime.
+
+## Resume Builder
+
+The builder saves a validated structured draft to PostgreSQL and always scopes
+it to the Clerk user ID from the server session. The initial template is a
+single-column ATS layout with English and Turkish section headings. AI buttons
+use the same local Ollama or deployed Groq configuration as Resume Analyzer and
+are instructed to rewrite only facts already present in the draft.
+
+PDF downloads are rendered on the server with selectable text and an embedded
+Roboto Latin Extended font, so Turkish characters remain intact. Apply the
+tracked Prisma migration before using the builder in an existing environment:
+
+```bash
+pnpm prisma migrate deploy
+```
