@@ -111,6 +111,9 @@ model SavedResumeAnalysis {
   id                        String    @id @default(cuid())
   userId                    String    @unique
   fileName                  String
+  originalFile              Bytes?
+  originalMimeType          String?
+  originalFileSize          Int?
   analysis                  Json
   importedDraft             Json?
   appliedImprovementIndexes Int[]     @default([])

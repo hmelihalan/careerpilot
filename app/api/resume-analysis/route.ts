@@ -40,6 +40,10 @@ export async function POST(request: Request) {
 
   try {
     const resumeText = await extractResumeText(resume);
+    const originalPdf =
+      resume.type === "application/pdf" || resume.name.toLowerCase().endsWith(".pdf")
+        ? new Uint8Array(await resume.arrayBuffer())
+        : null;
     const analysis = await analyzeResumeText(resumeText);
     let importedDraft = null;
     try {
@@ -52,6 +56,7 @@ export async function POST(request: Request) {
       fileName: resume.name,
       analysis,
       importedDraft,
+      originalPdf,
     });
     const analysisRuntime = getResumeAnalysisRuntime();
 

@@ -4,6 +4,7 @@ import type { ResumeDocument } from "@/src/lib/resume-builder/schema";
 export type SavedResumeAnalysisView = {
   id: string;
   fileName: string;
+  hasOriginalPdf: boolean;
   analysis: ResumeAnalysis;
   importedDraft: ResumeDocument | null;
   appliedImprovementIndexes: number[];

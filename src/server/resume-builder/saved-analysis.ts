@@ -18,17 +18,22 @@ export async function saveResumeAnalysis({
   fileName,
   analysis,
   importedDraft,
+  originalPdf,
 }: {
   userId: string;
   fileName: string;
   analysis: ResumeAnalysis;
   importedDraft: ResumeDocument | null;
+  originalPdf: Uint8Array<ArrayBuffer> | null;
 }) {
   return prisma.savedResumeAnalysis.upsert({
     where: { userId },
     create: {
       userId,
       fileName,
+      originalFile: originalPdf,
+      originalMimeType: originalPdf ? "application/pdf" : null,
+      originalFileSize: originalPdf?.byteLength ?? null,
       analysis: analysis as unknown as Prisma.InputJsonValue,
       importedDraft: importedDraft
         ? (importedDraft as unknown as Prisma.InputJsonValue)
@@ -36,6 +41,9 @@ export async function saveResumeAnalysis({
     },
     update: {
       fileName,
+      originalFile: originalPdf,
+      originalMimeType: originalPdf ? "application/pdf" : null,
+      originalFileSize: originalPdf?.byteLength ?? null,
       analysis: analysis as unknown as Prisma.InputJsonValue,
       importedDraft: importedDraft
         ? (importedDraft as unknown as Prisma.InputJsonValue)
@@ -51,7 +59,19 @@ export async function getSavedResumeAnalysisForCurrentUser(): Promise<
   SavedResumeAnalysisView | null
 > {
   const userId = await requireUser();
-  const saved = await prisma.savedResumeAnalysis.findUnique({ where: { userId } });
+  const saved = await prisma.savedResumeAnalysis.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      fileName: true,
+      originalFileSize: true,
+      analysis: true,
+      importedDraft: true,
+      appliedImprovementIndexes: true,
+      draftImportedAt: true,
+      updatedAt: true,
+    },
+  });
   if (!saved) return null;
 
   const analysis = resumeAnalysisSchema.safeParse(saved.analysis);
@@ -61,6 +81,7 @@ export async function getSavedResumeAnalysisForCurrentUser(): Promise<
   return {
     id: saved.id,
     fileName: saved.fileName,
+    hasOriginalPdf: saved.originalFileSize !== null,
     analysis: analysis.data,
     importedDraft: importedDraft.success ? importedDraft.data : null,
     appliedImprovementIndexes: saved.appliedImprovementIndexes,
