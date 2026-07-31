@@ -10,6 +10,8 @@ import {
   extractResumeText,
   ResumeFileError,
 } from "@/src/server/resume-analysis/extract-resume-text";
+import { parseResumeToDraft } from "@/src/server/resume-builder/parse-resume-to-draft";
+import { saveResumeAnalysis } from "@/src/server/resume-builder/saved-analysis";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -38,7 +40,24 @@ export async function POST(request: Request) {
 
   try {
     const resumeText = await extractResumeText(resume);
+    const originalPdf =
+      resume.type === "application/pdf" || resume.name.toLowerCase().endsWith(".pdf")
+        ? new Uint8Array(await resume.arrayBuffer())
+        : null;
     const analysis = await analyzeResumeText(resumeText);
+    let importedDraft = null;
+    try {
+      importedDraft = await parseResumeToDraft(resumeText, resume.name);
+    } catch (error) {
+      if (!(error instanceof ResumeAnalysisServiceError)) throw error;
+    }
+    const saved = await saveResumeAnalysis({
+      userId,
+      fileName: resume.name,
+      analysis,
+      importedDraft,
+      originalPdf,
+    });
     const analysisRuntime = getResumeAnalysisRuntime();
 
     return NextResponse.json({
@@ -48,6 +67,8 @@ export async function POST(request: Request) {
         fileName: resume.name,
         model: analysisRuntime.model,
         provider: analysisRuntime.provider,
+        savedAnalysisId: saved.id,
+        builderReady: importedDraft !== null,
       },
     });
   } catch (error) {

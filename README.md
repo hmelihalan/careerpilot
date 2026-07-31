@@ -4,8 +4,10 @@ CareerPilot is a Next.js application for tracking job applications, status histo
 
 The protected Resume Analyzer accepts PDF or TXT resumes, extracts readable
 text without storing the upload, and returns structured feedback from Ollama
-locally or Groq when deployed to Vercel. Notes CRUD and durable resume storage
-are not implemented.
+locally or Groq when deployed to Vercel. The protected Resume Builder stores
+multiple structured drafts per account, provides grounded AI writing
+assistance, shows a live ATS preview, and generates a text-based PDF.
+Application notes CRUD remains outside the current implementation.
 
 ## Requirements
 
@@ -13,8 +15,8 @@ are not implemented.
 - pnpm
 - Clerk application credentials
 - A PostgreSQL database such as Neon
-- Ollama with the `qwen3:4b` model for local resume analysis
-- A Groq API key for deployed resume analysis
+- Ollama with the `qwen3:4b` model for local resume analysis and writing help
+- A Groq API key for deployed resume analysis and writing help
 
 ## Environment setup
 
@@ -115,20 +117,53 @@ The API key remains server-only. Do not prefix it with `NEXT_PUBLIC_`.
 
 - `/demo` is public and uses local sample data only.
 - `/dashboard`, `/applications`, and other application routes are protected by Clerk.
+- `/resumes` lists every saved resume for the signed-in user.
+- `/resume-builder` provides the persistent ATS resume editor for a selected resume.
 - `/ai-studio` provides resume analysis for signed-in users.
 - Server-side data access derives `userId` from Clerk and scopes user-owned records accordingly.
 
 ## Resume analysis
 
 The analyzer accepts text-based PDF and TXT files up to 4 MB, keeping uploads
-below Vercel's 4.5 MB Function payload limit. Files are handled
-only for the active request and are not written to application storage. The
-server extracts text, sends it to the configured model with a strict JSON
-schema, validates the response, and returns scores and grounded recommendations
-to the browser. Local development uses Ollama. On Vercel, extracted resume text
-is sent to Groq for the active analysis request; the original file is not
-persisted by CareerPilot.
+below Vercel's 4.5 MB Function payload limit. Raw extracted text is not written
+to application storage. For PDF uploads, the latest original PDF is saved with
+the structured analysis and editable resume draft so the signed-in user can
+review highlighted evidence in Resume Builder. The file is served only through
+a user-scoped, no-store endpoint. Local development uses Ollama. On Vercel,
+extracted resume text is sent to Groq for the active request.
 
 Scanned PDFs without a readable text layer currently require OCR before upload.
 The analyzer can flag likely OCR errors in extracted text, but it does not
 rewrite the source document or use the checked-in ML dataset at runtime.
+
+## Resume Builder
+
+The My Resumes dashboard lists each user-owned draft, creates separate resumes
+for different roles, and lets users reopen or delete a saved version. The
+builder saves every validated structured draft to PostgreSQL and always scopes
+reads, updates, and deletes to the Clerk user ID from the server session. The
+initial template is a single-column ATS layout with English and Turkish section
+headings. AI buttons use the same local Ollama or deployed Groq configuration
+as Resume Analyzer and are instructed to rewrite only facts already present in
+the draft.
+
+The latest Resume Analyzer result is available inside the Builder. Users can
+compare the current draft with the uploaded resume before replacing it, review
+each recommendation as a before/after change, apply grounded text changes one
+at a time, and undo the latest applied suggestion. Suggestions that cannot be
+mapped safely open the relevant editor section instead of changing content
+automatically.
+
+For PDF analyses, the preview can switch between the original uploaded pages
+and the generated Builder resume. Mozilla PDF.js renders the original pages and
+uses the PDF text layer to locate Analyzer evidence. Matched areas are
+highlighted by recommendation priority; unmatched evidence remains available in
+the suggestions panel without guessing a page location.
+
+PDF downloads are rendered on the server with selectable text and an embedded
+Roboto Latin Extended font, so Turkish characters remain intact. Apply the
+tracked Prisma migration before using the builder in an existing environment:
+
+```bash
+pnpm prisma migrate deploy
+```
