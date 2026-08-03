@@ -1,4 +1,5 @@
 import type { ApplicationStatus as PrismaApplicationStatusValue } from "@/src/generated/prisma/enums";
+import type { InterviewQuestion } from "@/src/lib/application-materials/schema";
 
 export type ApplicationImportMethod = "description" | "url";
 
@@ -43,6 +44,16 @@ export type ApplicationDetailReminder = {
   updatedAt: string;
 };
 
+export type ApplicationMaterialView = {
+  id: string;
+  resumeDraftId: string | null;
+  resumeTitle: string;
+  coverLetter: string;
+  followUpMessage: string;
+  interviewQuestions: readonly InterviewQuestion[];
+  updatedAt: string;
+};
+
 export type ApplicationDetailStatusHistory = {
   id: string;
   fromStatus: ApplicationStatus | null;
@@ -73,6 +84,7 @@ export type ApplicationDetailViewModel = {
   editValues: ApplicationEditFormData;
   notes: readonly ApplicationDetailNote[];
   reminders: readonly ApplicationDetailReminder[];
+  material: ApplicationMaterialView | null;
   statusHistory: readonly ApplicationDetailStatusHistory[];
   createdAt: string;
   updatedAt: string;

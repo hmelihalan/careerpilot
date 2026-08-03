@@ -17,6 +17,7 @@ export async function getApplicationDetailForCurrentUser(
       slug,
     },
     include: {
+      material: true,
       notes: {
         orderBy: { createdAt: "desc" },
       },
