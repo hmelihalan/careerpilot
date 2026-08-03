@@ -47,7 +47,7 @@ export function ImportApplicationStep({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isSimulation) onAnalyze();
+    onAnalyze();
   }
 
   const errorId = `application-import-${method}-error`;
@@ -60,7 +60,7 @@ export function ImportApplicationStep({
         <DialogDescription className="max-w-2xl leading-5 text-slate-500">
           {isSimulation
             ? "Try a simulated local import using a job description or URL."
-            : "Automatic analysis for job descriptions and URLs is coming soon. Enter details manually to add an application now."}
+            : "Paste a job description or a LinkedIn job URL, then review the fields CareerPilot fills for you."}
         </DialogDescription>
       </DialogHeader>
 
@@ -105,12 +105,10 @@ export function ImportApplicationStep({
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="job-description-import">Job Description</Label>
-                {isSimulation ? (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700">
-                    <Sparkles className="size-3" aria-hidden="true" />
-                    Simulated demo
-                  </span>
-                ) : null}
+                <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700">
+                  <Sparkles className="size-3" aria-hidden="true" />
+                  {isSimulation ? "Simulated demo" : "AI auto-fill"}
+                </span>
               </div>
               <Textarea
                 id="job-description-import"
@@ -127,7 +125,7 @@ export function ImportApplicationStep({
               <p id={helpId} className="text-xs leading-5 text-slate-500">
                 {isSimulation
                   ? "This demo uses local mock data only; no analysis is performed and nothing is stored."
-                  : "Automatic description analysis is coming soon. Use Enter details manually below to save an application."}
+                  : "CareerPilot extracts company, role, location, work type, deadline, and required skills. You can edit everything before saving."}
               </p>
               {error ? (
                 <p id={errorId} className="text-xs font-medium text-red-600">
@@ -139,12 +137,10 @@ export function ImportApplicationStep({
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-3">
                 <Label htmlFor="job-url-import">Job URL</Label>
-                {isSimulation ? (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700">
-                    <Sparkles className="size-3" aria-hidden="true" />
-                    Simulated demo
-                  </span>
-                ) : null}
+                <span className="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-2 py-1 text-[11px] font-medium text-indigo-700">
+                  <Sparkles className="size-3" aria-hidden="true" />
+                  {isSimulation ? "Simulated demo" : "LinkedIn import"}
+                </span>
               </div>
               <Input
                 id="job-url-import"
@@ -161,8 +157,28 @@ export function ImportApplicationStep({
               <p id={helpId} className="text-xs leading-5 text-slate-500">
                 {isSimulation
                   ? "This demo uses local mock data only; no URL analysis is performed and nothing is stored."
-                  : "Automatic URL analysis is coming soon. Use Enter details manually below to save an application."}
+                  : "CareerPilot does not crawl LinkedIn pages. Add the description below for complete auto-fill; descriptive LinkedIn URLs can still provide role and company."}
               </p>
+              {!isSimulation ? (
+                <div className="space-y-2 pt-3">
+                  <Label htmlFor="linkedin-job-description-import">
+                    Job Description{" "}
+                    <span className="font-normal text-slate-400">
+                      (recommended)
+                    </span>
+                  </Label>
+                  <Textarea
+                    id="linkedin-job-description-import"
+                    value={description}
+                    onChange={(event) =>
+                      onDescriptionChange(event.target.value)
+                    }
+                    placeholder="Paste the LinkedIn job description for location, work mode, employment type, deadline, and skills..."
+                    rows={8}
+                    className="min-h-40 resize-y border-slate-200 bg-white leading-6"
+                  />
+                </div>
+              ) : null}
               {error ? (
                 <p id={errorId} className="text-xs font-medium text-red-600">
                   {error}
@@ -187,9 +203,14 @@ export function ImportApplicationStep({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!isSimulation}>
+        <Button
+          type="submit"
+          disabled={
+            method === "description" ? !description.trim() : !url.trim()
+          }
+        >
           <Sparkles data-icon="inline-start" aria-hidden="true" />
-          {isSimulation ? "Simulate Analysis" : "Analysis coming soon"}
+          {isSimulation ? "Simulate Analysis" : "Analyze & Fill"}
         </Button>
       </DialogFooter>
     </form>

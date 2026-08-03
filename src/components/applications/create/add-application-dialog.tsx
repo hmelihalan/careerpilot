@@ -105,6 +105,7 @@ export function AddApplicationDialog({
     useState<ApplicationCreationStatus>("Wishlist");
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const timersRef = useRef<number[]>([]);
+  const importControllerRef = useRef<AbortController | null>(null);
   const submittingRef = useRef(false);
   const sessionRef = useRef(0);
   const router = useRouter();
@@ -143,6 +144,8 @@ export function AddApplicationDialog({
 
   function closeDialog() {
     sessionRef.current += 1;
+    importControllerRef.current?.abort();
+    importControllerRef.current = null;
     clearTimers();
     setOpen(false);
     resetDialog();
@@ -171,14 +174,7 @@ export function AddApplicationDialog({
     setImportError(undefined);
   }
 
-  function handleAnalyze() {
-    if (!demoMode) {
-      setImportError(
-        "Automatic analysis is coming soon. Enter details manually to add this application.",
-      );
-      return;
-    }
-
+  async function handleAnalyze() {
     const input =
       importMethod === "description" ? descriptionInput : urlInput;
     const validationError = validateImportInput(importMethod, input);
@@ -191,22 +187,74 @@ export function AddApplicationDialog({
     setImportError(undefined);
     setStep("loading");
 
-    const timer = window.setTimeout(() => {
-      if (input.toLowerCase().includes(MOCK_IMPORT_ERROR_TOKEN)) {
-        setStep("error");
+    if (demoMode) {
+      const timer = window.setTimeout(() => {
+        if (input.toLowerCase().includes(MOCK_IMPORT_ERROR_TOKEN)) {
+          setStep("error");
+          return;
+        }
+
+        const extractedApplication = cloneMockApplication();
+        if (importMethod === "url") {
+          extractedApplication.applicationUrl = urlInput.trim();
+        }
+
+        setApplication(extractedApplication);
+        setWasAnalyzed(true);
+        setStep("review");
+      }, 1200);
+      timersRef.current.push(timer);
+      return;
+    }
+
+    const session = sessionRef.current;
+    const controller = new AbortController();
+    importControllerRef.current?.abort();
+    importControllerRef.current = controller;
+
+    try {
+      const response = await fetch("/api/applications/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          method: importMethod,
+          description: descriptionInput,
+          url: urlInput,
+        }),
+        signal: controller.signal,
+      });
+      const result = (await response.json().catch(() => null)) as
+        | { application: ApplicationFormData }
+        | { error?: { message?: string } }
+        | null;
+
+      if (session !== sessionRef.current) return;
+
+      if (!response.ok || !result || !("application" in result)) {
+        setImportError(
+          result && "error" in result && result.error?.message
+            ? result.error.message
+            : "The job could not be analyzed. Try again.",
+        );
+        setStep("import");
         return;
       }
 
-      const extractedApplication = cloneMockApplication();
-      if (importMethod === "url") {
-        extractedApplication.applicationUrl = urlInput.trim();
-      }
-
-      setApplication(extractedApplication);
+      setApplication(result.application);
       setWasAnalyzed(true);
       setStep("review");
-    }, 1200);
-    timersRef.current.push(timer);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (session !== sessionRef.current) return;
+      setImportError(
+        "The job could not be analyzed. Check the AI provider and try again.",
+      );
+      setStep("import");
+    } finally {
+      if (importControllerRef.current === controller) {
+        importControllerRef.current = null;
+      }
+    }
   }
 
   function handleManualEntry() {

@@ -122,6 +122,18 @@ The API key remains server-only. Do not prefix it with `NEXT_PUBLIC_`.
 - `/ai-studio` provides resume analysis for signed-in users.
 - Server-side data access derives `userId` from Clerk and scopes user-owned records accordingly.
 
+## Application import
+
+The Add Application dialog can turn a pasted job description into editable
+company, role, location, work mode, employment type, deadline, and required
+skill fields. It uses the same local Ollama or deployed Groq configuration as
+the resume features, and users review every extracted value before saving.
+
+LinkedIn imports accept only `/jobs/view/` links. CareerPilot does not crawl or
+scrape LinkedIn pages. It removes tracking parameters and can infer role and
+company from descriptive LinkedIn URL slugs; users can paste the job description
+alongside the URL for complete AI-assisted auto-fill.
+
 ## Resume analysis
 
 The analyzer accepts text-based PDF and TXT files up to 4 MB, keeping uploads
