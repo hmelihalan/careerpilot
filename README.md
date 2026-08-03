@@ -7,7 +7,8 @@ text without storing the upload, and returns structured feedback from Ollama
 locally or Groq when deployed to Vercel. The protected Resume Builder stores
 multiple structured drafts per account, provides grounded AI writing
 assistance, shows a live ATS preview, and generates a text-based PDF.
-Application notes CRUD remains outside the current implementation.
+Applications support persistent notes, follow-up reminders, and AI-generated
+materials grounded in a selected saved resume and the job description.
 
 ## Requirements
 
@@ -133,6 +134,20 @@ LinkedIn imports accept only `/jobs/view/` links. CareerPilot does not crawl or
 scrape LinkedIn pages. It removes tracking parameters and can infer role and
 company from descriptive LinkedIn URL slugs; users can paste the job description
 alongside the URL for complete AI-assisted auto-fill.
+
+## Application notes and materials
+
+Each application stores editable notes and dated follow-up reminders. Open
+reminders appear with application deadlines on the dashboard, and overdue
+follow-ups are highlighted until completed.
+
+The Cover Letter, Follow-up, and Interview Prep tabs use a selected saved resume
+plus the application job description to generate one consistent material set.
+Cover letters and follow-up emails can be edited, copied, and saved. Interview
+prep includes nine technical, behavioral, and company-specific questions with
+grounded answer guidance. The server verifies ownership of both the application
+and resume, and the model is instructed not to add unsupported qualifications
+or experience.
 
 ## Resume analysis
 
