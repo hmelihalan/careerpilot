@@ -88,6 +88,7 @@ export const uiSourceToPrisma = {
 type PrismaApplicationDetailRecord = Prisma.ApplicationGetPayload<{
   include: {
     notes: true;
+    reminders: true;
     statusHistory: true;
   };
 }>;
@@ -228,6 +229,14 @@ export function toApplicationDetailViewModel(
       content: note.content,
       createdAt: note.createdAt.toISOString(),
       updatedAt: note.updatedAt.toISOString(),
+    })),
+    reminders: application.reminders.map((reminder) => ({
+      id: reminder.id,
+      title: reminder.title,
+      remindAt: reminder.remindAt.toISOString(),
+      completedAt: reminder.completedAt?.toISOString() ?? null,
+      createdAt: reminder.createdAt.toISOString(),
+      updatedAt: reminder.updatedAt.toISOString(),
     })),
     statusHistory: application.statusHistory.map((history) => ({
       id: history.id,

@@ -34,6 +34,15 @@ export type ApplicationDetailNote = {
   updatedAt: string;
 };
 
+export type ApplicationDetailReminder = {
+  id: string;
+  title: string;
+  remindAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ApplicationDetailStatusHistory = {
   id: string;
   fromStatus: ApplicationStatus | null;
@@ -63,6 +72,7 @@ export type ApplicationDetailViewModel = {
   };
   editValues: ApplicationEditFormData;
   notes: readonly ApplicationDetailNote[];
+  reminders: readonly ApplicationDetailReminder[];
   statusHistory: readonly ApplicationDetailStatusHistory[];
   createdAt: string;
   updatedAt: string;
@@ -206,5 +216,14 @@ export type DeleteApplicationResult =
       success: false;
       reason: "validation" | "not-found" | "server";
       fieldErrors?: { slug?: string[] };
+      formError: string;
+    };
+
+export type ApplicationMutationResult =
+  | { success: true }
+  | {
+      success: false;
+      reason: "validation" | "not-found" | "server";
+      fieldErrors?: Record<string, string[]>;
       formError: string;
     };

@@ -20,6 +20,9 @@ export async function getApplicationDetailForCurrentUser(
       notes: {
         orderBy: { createdAt: "desc" },
       },
+      reminders: {
+        orderBy: [{ completedAt: "asc" }, { remindAt: "asc" }],
+      },
       statusHistory: {
         orderBy: { changedAt: "desc" },
       },

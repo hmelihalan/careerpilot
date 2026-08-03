@@ -190,3 +190,72 @@ export const updateApplicationSchema = z
 
 export type UpdateApplicationInput = z.input<typeof updateApplicationSchema>;
 export type UpdateApplicationData = z.output<typeof updateApplicationSchema>;
+
+const applicationSlug = z
+  .string()
+  .trim()
+  .min(1, "A valid application is required.")
+  .max(160, "The application identifier is invalid.");
+
+const recordId = z
+  .string()
+  .trim()
+  .min(1, "A valid record is required.")
+  .max(100, "The record identifier is invalid.");
+
+const noteContent = z
+  .string()
+  .trim()
+  .min(1, "Note content is required.")
+  .max(5_000, "Notes must be 5,000 characters or fewer.");
+
+export const createApplicationNoteSchema = z
+  .object({ slug: applicationSlug, content: noteContent })
+  .strict();
+
+export const updateApplicationNoteSchema = z
+  .object({ slug: applicationSlug, noteId: recordId, content: noteContent })
+  .strict();
+
+export const deleteApplicationNoteSchema = z
+  .object({ slug: applicationSlug, noteId: recordId })
+  .strict();
+
+const reminderTitle = z
+  .string()
+  .trim()
+  .min(1, "Reminder title is required.")
+  .max(200, "Reminder title must be 200 characters or fewer.");
+
+const reminderDate = z
+  .string()
+  .datetime({ offset: true, message: "Choose a valid reminder date and time." });
+
+export const createApplicationReminderSchema = z
+  .object({
+    slug: applicationSlug,
+    title: reminderTitle,
+    remindAt: reminderDate,
+  })
+  .strict();
+
+export const setApplicationReminderCompletionSchema = z
+  .object({ slug: applicationSlug, reminderId: recordId, completed: z.boolean() })
+  .strict();
+
+export const deleteApplicationReminderSchema = z
+  .object({ slug: applicationSlug, reminderId: recordId })
+  .strict();
+
+export type CreateApplicationNoteInput = z.input<typeof createApplicationNoteSchema>;
+export type UpdateApplicationNoteInput = z.input<typeof updateApplicationNoteSchema>;
+export type DeleteApplicationNoteInput = z.input<typeof deleteApplicationNoteSchema>;
+export type CreateApplicationReminderInput = z.input<
+  typeof createApplicationReminderSchema
+>;
+export type SetApplicationReminderCompletionInput = z.input<
+  typeof setApplicationReminderCompletionSchema
+>;
+export type DeleteApplicationReminderInput = z.input<
+  typeof deleteApplicationReminderSchema
+>;

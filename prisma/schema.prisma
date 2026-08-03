@@ -65,6 +65,7 @@ model Application {
   updatedAt      DateTime                   @updatedAt
   statusHistory  ApplicationStatusHistory[]
   notes          ApplicationNote[]
+  reminders      ApplicationReminder[]
 
   @@unique([userId, slug])
   @@index([userId])
@@ -93,6 +94,20 @@ model ApplicationNote {
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId, createdAt])
+}
+
+model ApplicationReminder {
+  id            String      @id @default(cuid())
+  applicationId String
+  title         String
+  remindAt      DateTime
+  completedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, remindAt])
+  @@index([completedAt, remindAt])
 }
 
 model ResumeDraft {
