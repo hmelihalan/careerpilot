@@ -124,7 +124,7 @@ export function ApplicationDetailPageContent(
           />
         ),
       },
-      { id: "notes", label: "Notes", content: <ApplicationNotes /> },
+      { id: "notes", label: "Notes", content: <ApplicationNotes demo /> },
       {
         id: "resume-match",
         label: "Resume Match",
@@ -208,7 +208,13 @@ export function ApplicationDetailPageContent(
       {
         id: "notes",
         label: "Notes",
-        content: <ApplicationNotes notes={application.notes} readOnly />,
+        content: (
+          <ApplicationNotes
+            slug={application.slug}
+            notes={application.notes}
+            reminders={application.reminders}
+          />
+        ),
       },
       {
         id: "resume-match",

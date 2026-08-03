@@ -34,10 +34,22 @@ export type DashboardUpcomingDeadline = {
   deadlineLabel: string;
 };
 
+export type DashboardUpcomingReminder = {
+  id: string;
+  slug: string;
+  company: string;
+  role: string;
+  title: string;
+  remindAt: string;
+  remindAtLabel: string;
+  overdue: boolean;
+};
+
 export type DashboardViewModel = {
   statusCounts: DashboardStatusCounts;
   responseRate: number;
   eligibleApplicationCount: number;
   recentApplications: readonly DashboardRecentApplication[];
   upcomingDeadlines: readonly DashboardUpcomingDeadline[];
+  upcomingReminders: readonly DashboardUpcomingReminder[];
 };
