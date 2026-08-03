@@ -15,6 +15,7 @@ import {
   type WorkMode,
 } from "../../generated/prisma/enums";
 import { APPLICATION_STATUS_META } from "@/src/constants/application-status";
+import { interviewQuestionsSchema } from "@/src/lib/application-materials/schema";
 import type {
   ApplicationCreationStatus,
   ApplicationDetailViewModel,
@@ -87,7 +88,9 @@ export const uiSourceToPrisma = {
 
 type PrismaApplicationDetailRecord = Prisma.ApplicationGetPayload<{
   include: {
+    material: true;
     notes: true;
+    reminders: true;
     statusHistory: true;
   };
 }>;
@@ -175,6 +178,10 @@ export function formatApplicationSalary(
 export function toApplicationDetailViewModel(
   application: PrismaApplicationDetailRecord,
 ): ApplicationDetailViewModel {
+  const interviewQuestions = application.material
+    ? interviewQuestionsSchema.safeParse(application.material.interviewQuestions)
+    : null;
+
   return {
     id: application.id,
     slug: application.slug,
@@ -229,6 +236,27 @@ export function toApplicationDetailViewModel(
       createdAt: note.createdAt.toISOString(),
       updatedAt: note.updatedAt.toISOString(),
     })),
+    reminders: application.reminders.map((reminder) => ({
+      id: reminder.id,
+      title: reminder.title,
+      remindAt: reminder.remindAt.toISOString(),
+      completedAt: reminder.completedAt?.toISOString() ?? null,
+      createdAt: reminder.createdAt.toISOString(),
+      updatedAt: reminder.updatedAt.toISOString(),
+    })),
+    material: application.material
+      ? {
+          id: application.material.id,
+          resumeDraftId: application.material.resumeDraftId,
+          resumeTitle: application.material.resumeTitle,
+          coverLetter: application.material.coverLetter,
+          followUpMessage: application.material.followUpMessage,
+          interviewQuestions: interviewQuestions?.success
+            ? interviewQuestions.data
+            : [],
+          updatedAt: application.material.updatedAt.toISOString(),
+        }
+      : null,
     statusHistory: application.statusHistory.map((history) => ({
       id: history.id,
       fromStatus: history.fromStatus

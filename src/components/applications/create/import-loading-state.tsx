@@ -30,7 +30,7 @@ export function ImportLoadingState({ mode, method }: ImportLoadingStateProps) {
         <DialogDescription className="text-slate-500">
           {isSimulation
             ? "CareerPilot is preparing a simulated review draft."
-            : "Automatic analysis is coming soon."}
+            : "CareerPilot is extracting editable application fields."}
         </DialogDescription>
       </DialogHeader>
       <div
@@ -45,12 +45,12 @@ export function ImportLoadingState({ mode, method }: ImportLoadingStateProps) {
           <h3 className="mt-4 text-base font-medium text-slate-950">
             {isSimulation
               ? `Simulating ${importLabel} analysis…`
-              : "Analysis unavailable"}
+              : `Analyzing ${importLabel}…`}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
             {isSimulation
               ? "Simulated demo only. Local mock data is used and nothing is stored."
-              : "Enter details manually to add this application."}
+              : "This can take a few seconds. You will review everything before saving."}
           </p>
           <ul className="mt-6 space-y-2 text-left">
             {analysisSteps.map((step) => (

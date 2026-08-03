@@ -10,6 +10,7 @@ import {
 import { requireUser } from "@/src/server/auth/require-user";
 import type {
   DashboardUpcomingDeadline,
+  DashboardUpcomingReminder,
   DashboardViewModel,
 } from "@/src/types/dashboard";
 
@@ -66,12 +67,53 @@ function toUpcomingDeadline(
   };
 }
 
+function formatDateTime(value: Date): string | null {
+  if (Number.isNaN(value.getTime())) return null;
+
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(value);
+  } catch {
+    return null;
+  }
+}
+
+function toUpcomingReminder(
+  reminder: {
+    id: string;
+    title: string;
+    remindAt: Date;
+    application: { slug: string; company: string; role: string };
+  },
+  now: Date,
+): DashboardUpcomingReminder | null {
+  const remindAtLabel = formatDateTime(reminder.remindAt);
+  if (!remindAtLabel) return null;
+
+  return {
+    id: reminder.id,
+    slug: reminder.application.slug,
+    company: reminder.application.company,
+    role: reminder.application.role,
+    title: reminder.title,
+    remindAt: reminder.remindAt.toISOString(),
+    remindAtLabel,
+    overdue: reminder.remindAt < now,
+  };
+}
+
 export async function getDashboardDataForCurrentUser(): Promise<DashboardViewModel | null> {
   const userId = await requireUser();
   const now = new Date();
 
   try {
-    const [statusGroups, recentRecords, deadlineRecords] = await Promise.all([
+    const [statusGroups, recentRecords, deadlineRecords, reminderRecords] =
+      await Promise.all([
       prisma.application.groupBy({
         by: ["status"],
         where: { userId },
@@ -113,6 +155,25 @@ export async function getDashboardDataForCurrentUser(): Promise<DashboardViewMod
           deadline: true,
         },
       }),
+      prisma.applicationReminder.findMany({
+        where: {
+          completedAt: null,
+          application: {
+            userId,
+            status: { not: ApplicationStatus.REJECTED },
+          },
+        },
+        orderBy: { remindAt: "asc" },
+        take: 5,
+        select: {
+          id: true,
+          title: true,
+          remindAt: true,
+          application: {
+            select: { slug: true, company: true, role: true },
+          },
+        },
+      }),
     ]);
 
     const metrics = calculateDashboardMetrics(
@@ -145,6 +206,11 @@ export async function getDashboardDataForCurrentUser(): Promise<DashboardViewMod
       upcomingDeadlines: deadlineRecords
         .map(toUpcomingDeadline)
         .filter((deadline): deadline is DashboardUpcomingDeadline => deadline !== null),
+      upcomingReminders: reminderRecords
+        .map((reminder) => toUpcomingReminder(reminder, now))
+        .filter(
+          (reminder): reminder is DashboardUpcomingReminder => reminder !== null,
+        ),
     };
   } catch (error) {
     console.error("Failed to load dashboard data.", error);

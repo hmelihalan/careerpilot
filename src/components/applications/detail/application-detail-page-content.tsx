@@ -11,6 +11,7 @@ import { ApplicationStatusControl } from "@/src/components/applications/detail/a
 import type { ApplicationDetailTab } from "@/src/components/applications/detail/application-detail-tabs";
 import { ApplicationDetailTabs } from "@/src/components/applications/detail/application-detail-tabs";
 import { ApplicationNotes } from "@/src/components/applications/detail/application-notes";
+import { ApplicationMaterialsPanel } from "@/src/components/applications/detail/application-materials-panel";
 import { ApplicationOverview } from "@/src/components/applications/detail/application-overview";
 import { CoverLetterPanel } from "@/src/components/applications/detail/cover-letter-panel";
 import { InterviewPrepPanel } from "@/src/components/applications/detail/interview-prep-panel";
@@ -22,10 +23,12 @@ import type {
   ApplicationDetailViewModel,
   MockApplication,
 } from "@/src/types/application";
+import type { ResumeListItem } from "@/src/types/resume-builder";
 
 type ApplicationDetailPageContentProps =
   | {
       application: ApplicationDetailViewModel;
+      resumes: readonly ResumeListItem[];
       mode?: "authenticated";
     }
   | {
@@ -124,7 +127,7 @@ export function ApplicationDetailPageContent(
           />
         ),
       },
-      { id: "notes", label: "Notes", content: <ApplicationNotes /> },
+      { id: "notes", label: "Notes", content: <ApplicationNotes demo /> },
       {
         id: "resume-match",
         label: "Resume Match",
@@ -138,6 +141,16 @@ export function ApplicationDetailPageContent(
       },
       { id: "cover-letter", label: "Cover Letter", content: <CoverLetterPanel /> },
       {
+        id: "follow-up",
+        label: "Follow-up",
+        content: (
+          <UnavailableFeaturePanel
+            title="Follow-up Message"
+            message="Sign in to generate a message from a saved resume and job listing."
+          />
+        ),
+      },
+      {
         id: "interview-prep",
         label: "Interview Prep",
         content: (
@@ -150,7 +163,7 @@ export function ApplicationDetailPageContent(
       { id: "activity", label: "Activity", content: <ActivityTimeline /> },
     ];
   } else {
-    const { application } = props;
+    const { application, resumes } = props;
     const appliedAt = application.dates.appliedAt;
     applicationsPath = appRoutes.authenticated.applications;
     demoMode = false;
@@ -208,7 +221,13 @@ export function ApplicationDetailPageContent(
       {
         id: "notes",
         label: "Notes",
-        content: <ApplicationNotes notes={application.notes} readOnly />,
+        content: (
+          <ApplicationNotes
+            slug={application.slug}
+            notes={application.notes}
+            reminders={application.reminders}
+          />
+        ),
       },
       {
         id: "resume-match",
@@ -224,9 +243,31 @@ export function ApplicationDetailPageContent(
         id: "cover-letter",
         label: "Cover Letter",
         content: (
-          <UnavailableFeaturePanel
-            title="Cover Letter"
-            message="No cover letter has been generated yet."
+          <ApplicationMaterialsPanel
+            key={`cover-letter-${application.material?.updatedAt ?? "empty"}`}
+            kind="coverLetter"
+            slug={application.slug}
+            company={application.company}
+            role={application.role}
+            hasJobDescription={Boolean(application.jobDescription)}
+            resumes={resumes}
+            material={application.material}
+          />
+        ),
+      },
+      {
+        id: "follow-up",
+        label: "Follow-up",
+        content: (
+          <ApplicationMaterialsPanel
+            key={`follow-up-${application.material?.updatedAt ?? "empty"}`}
+            kind="followUpMessage"
+            slug={application.slug}
+            company={application.company}
+            role={application.role}
+            hasJobDescription={Boolean(application.jobDescription)}
+            resumes={resumes}
+            material={application.material}
           />
         ),
       },
@@ -234,9 +275,15 @@ export function ApplicationDetailPageContent(
         id: "interview-prep",
         label: "Interview Prep",
         content: (
-          <UnavailableFeaturePanel
-            title="Interview Prep"
-            message="AI analysis has not been generated yet."
+          <ApplicationMaterialsPanel
+            key={`interview-${application.material?.updatedAt ?? "empty"}`}
+            kind="interviewQuestions"
+            slug={application.slug}
+            company={application.company}
+            role={application.role}
+            hasJobDescription={Boolean(application.jobDescription)}
+            resumes={resumes}
+            material={application.material}
           />
         ),
       },

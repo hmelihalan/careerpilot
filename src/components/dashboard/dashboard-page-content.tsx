@@ -190,6 +190,7 @@ export function DashboardPageContent(props: DashboardPageContentProps) {
           <UpcomingDeadlines
             applicationsPath={applicationsPath}
             deadlines={props.dashboard.upcomingDeadlines}
+            reminders={props.dashboard.upcomingReminders}
           />
         </section>
       )}

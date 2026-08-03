@@ -65,6 +65,8 @@ model Application {
   updatedAt      DateTime                   @updatedAt
   statusHistory  ApplicationStatusHistory[]
   notes          ApplicationNote[]
+  reminders      ApplicationReminder[]
+  material       ApplicationMaterial?
 
   @@unique([userId, slug])
   @@index([userId])
@@ -95,6 +97,36 @@ model ApplicationNote {
   @@index([applicationId, createdAt])
 }
 
+model ApplicationReminder {
+  id            String      @id @default(cuid())
+  applicationId String
+  title         String
+  remindAt      DateTime
+  completedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId, remindAt])
+  @@index([completedAt, remindAt])
+}
+
+model ApplicationMaterial {
+  id                 String      @id @default(cuid())
+  applicationId      String      @unique
+  resumeDraftId      String?
+  resumeTitle        String
+  coverLetter        String      @db.Text
+  followUpMessage    String      @db.Text
+  interviewQuestions Json
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  application        Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  resumeDraft        ResumeDraft? @relation(fields: [resumeDraftId], references: [id], onDelete: SetNull)
+
+  @@index([resumeDraftId])
+}
+
 model ResumeDraft {
   id        String   @id @default(cuid())
   userId    String
@@ -103,6 +135,7 @@ model ResumeDraft {
   content   Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  applicationMaterials ApplicationMaterial[]
 
   @@index([userId])
   @@index([userId, updatedAt])

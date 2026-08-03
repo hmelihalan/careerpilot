@@ -3,6 +3,7 @@ import type {
   ApplicationFormData,
   ApplicationImportMethod,
 } from "@/src/types/application";
+import { isLinkedInJobUrl } from "@/src/lib/applications/linkedin-job-url";
 
 function isValidHttpUrl(value: string): boolean {
   try {
@@ -29,8 +30,8 @@ export function validateImportInput(
     return "Job description must be at least 100 characters. Add more details from the listing.";
   }
 
-  if (method === "url" && !isValidHttpUrl(normalizedValue)) {
-    return "Enter a valid URL beginning with http:// or https://.";
+  if (method === "url" && !isLinkedInJobUrl(normalizedValue)) {
+    return "Enter a LinkedIn job URL such as https://www.linkedin.com/jobs/view/1234567890.";
   }
 
   return undefined;
