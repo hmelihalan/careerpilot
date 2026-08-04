@@ -143,11 +143,14 @@ model ResumeDraft {
 
 model SavedResumeAnalysis {
   id                        String    @id @default(cuid())
-  userId                    String    @unique
+  userId                    String
   fileName                  String
   originalFile              Bytes?
   originalMimeType          String?
   originalFileSize          Int?
+  provider                  String?
+  model                     String?
+  characterCount            Int?
   analysis                  Json
   importedDraft             Json?
   appliedImprovementIndexes Int[]     @default([])
@@ -156,4 +159,5 @@ model SavedResumeAnalysis {
   updatedAt                 DateTime  @updatedAt
 
   @@index([userId])
+  @@index([userId, updatedAt])
 }
