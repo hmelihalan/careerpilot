@@ -149,6 +149,16 @@ grounded answer guidance. The server verifies ownership of both the application
 and resume, and the model is instructed not to add unsupported qualifications
 or experience.
 
+## Analytics
+
+The protected Analytics page calculates all-time response and interview rates
+from application status history, so an application that later becomes rejected
+still retains earlier interview progress. It compares conversion by application
+source, averages time across completed stage transitions, and groups outcomes by
+the resume selected for generated application materials. Wishlist items and
+incomplete current-stage durations are excluded, and every rate includes its
+sample size to make sparse data visible.
+
 ## Resume analysis
 
 The analyzer accepts text-based PDF and TXT files up to 4 MB, keeping uploads
