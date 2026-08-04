@@ -163,11 +163,12 @@ sample size to make sparse data visible.
 
 The analyzer accepts text-based PDF and TXT files up to 4 MB, keeping uploads
 below Vercel's 4.5 MB Function payload limit. Raw extracted text is not written
-to application storage. For PDF uploads, the latest original PDF is saved with
-the structured analysis and editable resume draft so the signed-in user can
-review highlighted evidence in Resume Builder. The file is served only through
-a user-scoped, no-store endpoint. Local development uses Ollama. On Vercel,
-extracted resume text is sent to Groq for the active request.
+to application storage. Every PDF or TXT upload is saved as a separate,
+user-owned history record together with its structured analysis and editable
+resume draft. Users can reopen or delete old analyses from My Resumes, and PDF
+uploads retain highlighted evidence in Resume Builder. Original files are
+served only through a user-scoped, no-store endpoint. Local development uses
+Ollama. On Vercel, extracted resume text is sent to Groq for the active request.
 
 Scanned PDFs without a readable text layer currently require OCR before upload.
 The analyzer can flag likely OCR errors in extracted text, but it does not
@@ -184,7 +185,8 @@ headings. AI buttons use the same local Ollama or deployed Groq configuration
 as Resume Analyzer and are instructed to rewrite only facts already present in
 the draft.
 
-The latest Resume Analyzer result is available inside the Builder. Users can
+The selected Resume Analyzer history record is available inside the Builder;
+without an explicit selection, the most recently updated analysis is used. Users can
 compare the current draft with the uploaded resume before replacing it, review
 each recommendation as a before/after change, apply grounded text changes one
 at a time, and undo the latest applied suggestion. Suggestions that cannot be

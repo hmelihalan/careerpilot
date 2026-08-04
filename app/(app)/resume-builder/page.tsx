@@ -9,15 +9,15 @@ import { getSavedResumeAnalysisForCurrentUser } from "@/src/server/resume-builde
 export default async function ResumeBuilderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ resume?: string }>;
+  searchParams: Promise<{ resume?: string; analysis?: string }>;
 }) {
-  const { resume: resumeId } = await searchParams;
+  const { resume: resumeId, analysis: analysisId } = await searchParams;
   const [currentResume, savedAnalysis] = await Promise.all([
     getResumeDraftForCurrentUser(resumeId),
-    getSavedResumeAnalysisForCurrentUser(),
+    getSavedResumeAnalysisForCurrentUser(analysisId),
   ]);
 
-  if (!currentResume) notFound();
+  if (!currentResume || (analysisId && !savedAnalysis)) notFound();
 
   const aiMode =
     (process.env.RESUME_ANALYSIS_PROVIDER ??
