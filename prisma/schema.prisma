@@ -41,6 +41,12 @@ enum ApplicationSource {
   OTHER
 }
 
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
 model Application {
   id             String                     @id @default(cuid())
   userId         String
@@ -69,6 +75,7 @@ model Application {
   material       ApplicationMaterial?
   resumeVersions ApplicationResumeVersion[]
   resumeMatches  ApplicationResumeMatch[]
+  interviews     ApplicationInterview[]
 
   @@unique([userId, slug])
   @@index([userId])
@@ -100,17 +107,42 @@ model ApplicationNote {
 }
 
 model ApplicationReminder {
-  id            String      @id @default(cuid())
+  id            String                @id @default(cuid())
   applicationId String
   title         String
   remindAt      DateTime
   completedAt   DateTime?
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  application   Application           @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  interview     ApplicationInterview?
 
   @@index([applicationId, remindAt])
   @@index([completedAt, remindAt])
+}
+
+model ApplicationInterview {
+  id                    String               @id @default(cuid())
+  applicationId         String
+  title                 String
+  roundNumber           Int
+  scheduledAt           DateTime
+  durationMinutes       Int                  @default(60)
+  interviewerName       String?
+  interviewerRole       String?
+  location              String?
+  meetingUrl            String?
+  status                InterviewStatus      @default(SCHEDULED)
+  completedAt           DateTime?
+  reminderMinutesBefore Int?
+  reminderId            String?              @unique
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  application           Application          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reminder              ApplicationReminder? @relation(fields: [reminderId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, scheduledAt])
+  @@index([status, scheduledAt])
 }
 
 model ApplicationMaterial {
