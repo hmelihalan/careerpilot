@@ -16,6 +16,7 @@ import {
 } from "../../generated/prisma/enums";
 import { APPLICATION_STATUS_META } from "@/src/constants/application-status";
 import { interviewQuestionsSchema } from "@/src/lib/application-materials/schema";
+import { resumeMatchResultSchema } from "@/src/lib/resume-match/schema";
 import type {
   ApplicationCreationStatus,
   ApplicationDetailViewModel,
@@ -89,6 +90,8 @@ export const uiSourceToPrisma = {
 type PrismaApplicationDetailRecord = Prisma.ApplicationGetPayload<{
   include: {
     material: true;
+    resumeMatches: { include: { resumeVersion: true } };
+    resumeVersions: true;
     notes: true;
     reminders: true;
     statusHistory: true;
@@ -257,6 +260,36 @@ export function toApplicationDetailViewModel(
           updatedAt: application.material.updatedAt.toISOString(),
         }
       : null,
+    submittedResume: application.resumeVersions[0]?.submittedAt
+      ? {
+          id: application.resumeVersions[0].id,
+          sourceResumeDraftId:
+            application.resumeVersions[0].sourceResumeDraftId,
+          resumeTitle: application.resumeVersions[0].resumeTitle,
+          submittedAt: application.resumeVersions[0].submittedAt.toISOString(),
+        }
+      : null,
+    resumeMatches: application.resumeMatches.flatMap((match) => {
+      const result = resumeMatchResultSchema.safeParse(match.result);
+      if (!result.success) return [];
+      return [
+        {
+          id: match.id,
+          resumeVersionId: match.resumeVersionId,
+          sourceResumeDraftId: match.resumeVersion.sourceResumeDraftId,
+          resumeTitle: match.resumeVersion.resumeTitle,
+          isSubmitted: match.resumeVersion.isSubmitted,
+          submittedAt: match.resumeVersion.submittedAt?.toISOString() ?? null,
+          result: result.data,
+          acceptedSuggestionIndexes: match.acceptedSuggestionIndexes,
+          rejectedSuggestionIndexes: match.rejectedSuggestionIndexes,
+          tailoredResumeDraftId: match.tailoredResumeDraftId,
+          provider: match.provider,
+          model: match.model,
+          createdAt: match.createdAt.toISOString(),
+        },
+      ];
+    }),
     statusHistory: application.statusHistory.map((history) => ({
       id: history.id,
       fromStatus: history.fromStatus

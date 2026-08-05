@@ -18,6 +18,15 @@ export async function getApplicationDetailForCurrentUser(
     },
     include: {
       material: true,
+      resumeMatches: {
+        include: { resumeVersion: true },
+        orderBy: { createdAt: "desc" },
+      },
+      resumeVersions: {
+        where: { isSubmitted: true },
+        orderBy: { submittedAt: "desc" },
+        take: 1,
+      },
       notes: {
         orderBy: { createdAt: "desc" },
       },
