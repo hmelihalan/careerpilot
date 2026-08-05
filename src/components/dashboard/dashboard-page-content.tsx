@@ -163,10 +163,14 @@ export function DashboardPageContent(props: DashboardPageContentProps) {
           )}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:col-span-3 xl:grid-cols-1">
-          <UpcomingInterview
-            applicationsPath={applicationsPath}
-            unavailable={!demoMode}
-          />
+          {demoMode ? (
+            <UpcomingInterview applicationsPath={applicationsPath} mode="demo" />
+          ) : (
+            <UpcomingInterview
+              applicationsPath={applicationsPath}
+              interviews={props.dashboard.upcomingInterviews}
+            />
+          )}
           <AiRecommendation
             applicationsPath={applicationsPath}
             unavailable={!demoMode}

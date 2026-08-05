@@ -11,6 +11,7 @@ import { requireUser } from "@/src/server/auth/require-user";
 import type {
   DashboardUpcomingDeadline,
   DashboardUpcomingReminder,
+  DashboardUpcomingInterview,
   DashboardViewModel,
 } from "@/src/types/dashboard";
 
@@ -107,12 +108,40 @@ function toUpcomingReminder(
   };
 }
 
+function toUpcomingInterview(interview: {
+  id: string;
+  title: string;
+  roundNumber: number;
+  scheduledAt: Date;
+  durationMinutes: number;
+  location: string | null;
+  meetingUrl: string | null;
+  application: { slug: string; company: string; role: string };
+}): DashboardUpcomingInterview | null {
+  const scheduledAtLabel = formatDateTime(interview.scheduledAt);
+  if (!scheduledAtLabel) return null;
+  return {
+    id: interview.id,
+    slug: interview.application.slug,
+    company: interview.application.company,
+    role: interview.application.role,
+    initials: getInitials(interview.application.company),
+    title: interview.title,
+    roundNumber: interview.roundNumber,
+    scheduledAt: interview.scheduledAt.toISOString(),
+    scheduledAtLabel,
+    durationMinutes: interview.durationMinutes,
+    location: interview.location?.trim() || null,
+    meetingUrl: interview.meetingUrl?.trim() || null,
+  };
+}
+
 export async function getDashboardDataForCurrentUser(): Promise<DashboardViewModel | null> {
   const userId = await requireUser();
   const now = new Date();
 
   try {
-    const [statusGroups, recentRecords, deadlineRecords, reminderRecords] =
+    const [statusGroups, recentRecords, deadlineRecords, reminderRecords, interviewRecords] =
       await Promise.all([
       prisma.application.groupBy({
         by: ["status"],
@@ -174,6 +203,30 @@ export async function getDashboardDataForCurrentUser(): Promise<DashboardViewMod
           },
         },
       }),
+      prisma.applicationInterview.findMany({
+        where: {
+          status: "SCHEDULED",
+          scheduledAt: { gte: now },
+          application: {
+            userId,
+            status: { not: ApplicationStatus.REJECTED },
+          },
+        },
+        orderBy: { scheduledAt: "asc" },
+        take: 3,
+        select: {
+          id: true,
+          title: true,
+          roundNumber: true,
+          scheduledAt: true,
+          durationMinutes: true,
+          location: true,
+          meetingUrl: true,
+          application: {
+            select: { slug: true, company: true, role: true },
+          },
+        },
+      }),
     ]);
 
     const metrics = calculateDashboardMetrics(
@@ -210,6 +263,11 @@ export async function getDashboardDataForCurrentUser(): Promise<DashboardViewMod
         .map((reminder) => toUpcomingReminder(reminder, now))
         .filter(
           (reminder): reminder is DashboardUpcomingReminder => reminder !== null,
+        ),
+      upcomingInterviews: interviewRecords
+        .map(toUpcomingInterview)
+        .filter(
+          (interview): interview is DashboardUpcomingInterview => interview !== null,
         ),
     };
   } catch (error) {

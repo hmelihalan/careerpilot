@@ -94,6 +94,7 @@ type PrismaApplicationDetailRecord = Prisma.ApplicationGetPayload<{
     resumeVersions: true;
     notes: true;
     reminders: true;
+    interviews: true;
     statusHistory: true;
   };
 }>;
@@ -246,6 +247,23 @@ export function toApplicationDetailViewModel(
       completedAt: reminder.completedAt?.toISOString() ?? null,
       createdAt: reminder.createdAt.toISOString(),
       updatedAt: reminder.updatedAt.toISOString(),
+    })),
+    interviews: application.interviews.map((interview) => ({
+      id: interview.id,
+      title: interview.title,
+      roundNumber: interview.roundNumber,
+      scheduledAt: interview.scheduledAt.toISOString(),
+      durationMinutes: interview.durationMinutes,
+      interviewerName: interview.interviewerName,
+      interviewerRole: interview.interviewerRole,
+      location: interview.location,
+      meetingUrl: interview.meetingUrl,
+      status: interview.status,
+      completedAt: interview.completedAt?.toISOString() ?? null,
+      reminderMinutesBefore: interview.reminderMinutesBefore,
+      reminderId: interview.reminderId,
+      createdAt: interview.createdAt.toISOString(),
+      updatedAt: interview.updatedAt.toISOString(),
     })),
     material: application.material
       ? {

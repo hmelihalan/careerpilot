@@ -16,6 +16,7 @@ import { ApplicationResumeMatchWorkspace } from "@/src/components/applications/d
 import { ApplicationOverview } from "@/src/components/applications/detail/application-overview";
 import { CoverLetterPanel } from "@/src/components/applications/detail/cover-letter-panel";
 import { InterviewPrepPanel } from "@/src/components/applications/detail/interview-prep-panel";
+import { InterviewPlanner } from "@/src/components/applications/detail/interview-planner";
 import { JobDescriptionPanel } from "@/src/components/applications/detail/job-description-panel";
 import { ResumeMatchPanel } from "@/src/components/applications/detail/resume-match-panel";
 import { DemoModeNotice } from "@/src/components/shared/demo-mode-notice";
@@ -275,6 +276,18 @@ export function ApplicationDetailPageContent(
             hasJobDescription={Boolean(application.jobDescription)}
             resumes={resumes}
             material={application.material}
+          />
+        ),
+      },
+      {
+        id: "interviews",
+        label: "Interviews",
+        content: (
+          <InterviewPlanner
+            slug={application.slug}
+            company={application.company}
+            role={application.role}
+            interviews={application.interviews}
           />
         ),
       },

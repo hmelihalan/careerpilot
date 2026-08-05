@@ -33,6 +33,9 @@ export async function getApplicationDetailForCurrentUser(
       reminders: {
         orderBy: [{ completedAt: "asc" }, { remindAt: "asc" }],
       },
+      interviews: {
+        orderBy: { scheduledAt: "asc" },
+      },
       statusHistory: {
         orderBy: { changedAt: "desc" },
       },
