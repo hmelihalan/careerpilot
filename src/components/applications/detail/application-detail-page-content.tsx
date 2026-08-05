@@ -12,6 +12,7 @@ import type { ApplicationDetailTab } from "@/src/components/applications/detail/
 import { ApplicationDetailTabs } from "@/src/components/applications/detail/application-detail-tabs";
 import { ApplicationNotes } from "@/src/components/applications/detail/application-notes";
 import { ApplicationMaterialsPanel } from "@/src/components/applications/detail/application-materials-panel";
+import { ApplicationResumeMatchWorkspace } from "@/src/components/applications/detail/application-resume-match-workspace";
 import { ApplicationOverview } from "@/src/components/applications/detail/application-overview";
 import { CoverLetterPanel } from "@/src/components/applications/detail/cover-letter-panel";
 import { InterviewPrepPanel } from "@/src/components/applications/detail/interview-prep-panel";
@@ -233,9 +234,15 @@ export function ApplicationDetailPageContent(
         id: "resume-match",
         label: "Resume Match",
         content: (
-          <UnavailableFeaturePanel
-            title="Resume Match"
-            message="AI analysis has not been generated yet."
+          <ApplicationResumeMatchWorkspace
+            key={application.resumeMatches[0]?.id ?? "empty-resume-match"}
+            slug={application.slug}
+            company={application.company}
+            role={application.role}
+            hasJobDescription={Boolean(application.jobDescription)}
+            resumes={resumes}
+            matches={application.resumeMatches}
+            submittedResume={application.submittedResume}
           />
         ),
       },

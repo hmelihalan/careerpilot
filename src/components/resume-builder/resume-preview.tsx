@@ -4,6 +4,8 @@ import type {
   ResumeDocument,
   ResumeLanguage,
 } from "@/src/lib/resume-builder/schema";
+import type { TailoredResumeChange } from "@/src/lib/resume-match/apply-suggestions";
+import { cn } from "@/lib/utils";
 
 const labels: Record<
   ResumeLanguage,
@@ -45,7 +47,13 @@ function toHref(value: string): string {
   return `https://${value}`;
 }
 
-export function ResumePreview({ draft }: { draft: ResumeDocument }) {
+export function ResumePreview({
+  draft,
+  highlightedChanges = [],
+}: {
+  draft: ResumeDocument;
+  highlightedChanges?: readonly TailoredResumeChange[];
+}) {
   const copy = labels[draft.language];
   const contact = [
     draft.contact.email,
@@ -60,6 +68,24 @@ export function ResumePreview({ draft }: { draft: ResumeDocument }) {
     draft.skills.length ||
     draft.projects.length ||
     draft.certifications.length;
+  const summaryHighlighted = highlightedChanges.some(
+    (change) => change.section === "summary",
+  );
+  const highlightedSkills = new Set(
+    highlightedChanges
+      .filter((change) => change.section === "skills")
+      .map((change) => change.after.trim().toLocaleLowerCase("en-US")),
+  );
+  const highlightedBullets = new Set(
+    highlightedChanges
+      .filter(
+        (change) =>
+          change.section === "experience" &&
+          change.experienceId !== null &&
+          change.bulletIndex !== null,
+      )
+      .map((change) => `${change.experienceId}:${change.bulletIndex}`),
+  );
 
   return (
     <article
@@ -109,7 +135,7 @@ export function ResumePreview({ draft }: { draft: ResumeDocument }) {
 
       {draft.summary ? (
         <Section title={copy.summary}>
-          <p className="whitespace-pre-line">{draft.summary}</p>
+          <p className={cn("whitespace-pre-line", summaryHighlighted && "rounded bg-emerald-100 px-1 ring-1 ring-emerald-300")}>{draft.summary}</p>
         </Section>
       ) : null}
 
@@ -136,9 +162,11 @@ export function ResumePreview({ draft }: { draft: ResumeDocument }) {
                 </div>
                 {item.bullets.filter(Boolean).length ? (
                   <ul className="mt-1.5 list-disc space-y-0.5 pl-4">
-                    {item.bullets.filter(Boolean).map((bullet, index) => (
-                      <li key={`${item.id}-${index}`}>{bullet}</li>
-                    ))}
+                    {item.bullets.map((bullet, index) =>
+                      bullet ? (
+                        <li key={`${item.id}-${index}`} className={cn(highlightedBullets.has(`${item.id}:${index}`) && "rounded bg-emerald-100 px-1 ring-1 ring-emerald-300")}>{bullet}</li>
+                      ) : null,
+                    )}
                   </ul>
                 ) : null}
               </div>
@@ -172,7 +200,14 @@ export function ResumePreview({ draft }: { draft: ResumeDocument }) {
 
       {draft.skills.filter(Boolean).length ? (
         <Section title={copy.skills}>
-          <p>{draft.skills.filter(Boolean).join(", ")}</p>
+          <p>
+            {draft.skills.filter(Boolean).map((skill, index, skills) => (
+              <span key={`${skill}-${index}`}>
+                <span className={cn(highlightedSkills.has(skill.trim().toLocaleLowerCase("en-US")) && "rounded bg-emerald-100 px-1 ring-1 ring-emerald-300")}>{skill}</span>
+                {index < skills.length - 1 ? ", " : ""}
+              </span>
+            ))}
+          </p>
         </Section>
       ) : null}
 

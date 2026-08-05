@@ -17,8 +17,8 @@ type AnalyticsApplicationInput = {
     toStatus: ApplicationStatus;
     changedAt: Date;
   }[];
-  material: {
-    resumeDraftId: string | null;
+  submittedResume: {
+    sourceResumeDraftId: string | null;
     resumeTitle: string;
   } | null;
 };
@@ -173,11 +173,12 @@ function calculateResumePerformance(
   >();
 
   for (const application of applications) {
-    if (!application.material) continue;
+    if (!application.submittedResume) continue;
     const visited = visitedStatuses(application);
     if (!isEligible(visited)) continue;
 
-    const { resumeDraftId, resumeTitle } = application.material;
+    const { sourceResumeDraftId: resumeDraftId, resumeTitle } =
+      application.submittedResume;
     const key = resumeDraftId ?? `deleted:${resumeTitle}`;
     const group = groups.get(key) ?? {
       key,
@@ -224,7 +225,7 @@ export function calculateAnalytics(
     hasAnyStatus(visitedStatuses(application), INTERVIEW_STATUSES),
   ).length;
   const cvLinkedApplications = eligible.filter(
-    (application) => application.material !== null,
+    (application) => application.submittedResume !== null,
   ).length;
 
   return {

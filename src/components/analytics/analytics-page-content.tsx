@@ -242,7 +242,7 @@ export function AnalyticsPageContent({ analytics }: AnalyticsPageContentProps) {
         <CardHeader className="border-b border-slate-100">
           <CardTitle>Resume Performance</CardTitle>
           <p className="mt-0.5 text-xs text-slate-500">
-            Outcomes grouped by the CV selected when application materials were generated.
+            Outcomes grouped by immutable CV snapshots marked as submitted.
           </p>
         </CardHeader>
         <CardContent>
@@ -311,7 +311,7 @@ export function AnalyticsPageContent({ analytics }: AnalyticsPageContentProps) {
               <FileCheck2 className="mx-auto size-5 text-slate-400" aria-hidden="true" />
               <p className="mt-2 text-sm font-medium text-slate-900">No CV outcomes yet</p>
               <p className="mt-1 text-xs leading-5 text-slate-500">
-                Generate application materials from a saved CV, then update the application status to compare outcomes.
+                Mark the CV used for an application as submitted, then update its status to compare outcomes.
               </p>
             </div>
           )}

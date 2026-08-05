@@ -22,7 +22,7 @@ function application(
         changedAt: createdAt,
       },
     ],
-    material: null,
+    submittedResume: null,
     ...overrides,
   };
 }
@@ -144,14 +144,14 @@ describe("calculateAnalytics", () => {
     const result = calculateAnalytics([
       application("resume-a-interview", {
         status: ApplicationStatus.INTERVIEW,
-        material: { resumeDraftId: "resume-a", resumeTitle: "Frontend CV" },
+        submittedResume: { sourceResumeDraftId: "resume-a", resumeTitle: "Frontend CV" },
       }),
       application("resume-a-waiting", {
-        material: { resumeDraftId: "resume-a", resumeTitle: "Frontend CV" },
+        submittedResume: { sourceResumeDraftId: "resume-a", resumeTitle: "Frontend CV" },
       }),
       application("resume-b-offer", {
         status: ApplicationStatus.OFFER,
-        material: { resumeDraftId: "resume-b", resumeTitle: "Product CV" },
+        submittedResume: { sourceResumeDraftId: "resume-b", resumeTitle: "Product CV" },
       }),
       application("not-linked"),
     ]);

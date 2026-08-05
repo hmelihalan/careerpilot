@@ -25,9 +25,12 @@ export async function getAnalyticsDataForCurrentUser(): Promise<AnalyticsViewMod
             changedAt: true,
           },
         },
-        material: {
+        resumeVersions: {
+          where: { isSubmitted: true },
+          orderBy: { submittedAt: "desc" },
+          take: 1,
           select: {
-            resumeDraftId: true,
+            sourceResumeDraftId: true,
             resumeTitle: true,
           },
         },
@@ -38,6 +41,7 @@ export async function getAnalyticsDataForCurrentUser(): Promise<AnalyticsViewMod
       applications.map((application) => ({
         ...application,
         source: application.source ? prismaSourceToUi[application.source] : null,
+        submittedResume: application.resumeVersions[0] ?? null,
       })),
     );
   } catch (error) {

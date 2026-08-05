@@ -5,7 +5,10 @@ import { z } from "zod";
 import { Prisma } from "@/src/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
 import { resumeMatchResultSchema } from "@/src/lib/resume-match/schema";
-import { resumeDocumentSchema } from "@/src/lib/resume-builder/schema";
+import {
+  resumeDocumentSchema,
+  type ResumeDocument,
+} from "@/src/lib/resume-builder/schema";
 
 const requestSchema = z.discriminatedUnion("action", [
   z
@@ -76,12 +79,26 @@ export async function PATCH(
       data: {
         acceptedSuggestionIndexes: [...accepted].sort((a, b) => a - b),
         rejectedSuggestionIndexes: [...rejected].sort((a, b) => a - b),
+        tailoredResumeDraftId: null,
       },
     });
     return NextResponse.json({ success: true });
   }
 
   const useTailoredResume = input.data.useTailoredResume;
+  let tailoredDocument: ResumeDocument | null = null;
+  if (useTailoredResume && !match.tailoredResumeDraft) {
+    return errorResponse("Tailored resume not found.", "tailored_resume_not_found", 404);
+  }
+  if (useTailoredResume) {
+    const parsedTailoredDocument = resumeDocumentSchema.safeParse(
+      match.tailoredResumeDraft!.content,
+    );
+    if (!parsedTailoredDocument.success) {
+      return errorResponse("The tailored resume could not be read.", "invalid_resume", 409);
+    }
+    tailoredDocument = parsedTailoredDocument.data;
+  }
   let submittedVersionId = match.resumeVersionId;
   await prisma.$transaction(async (transaction) => {
     await transaction.applicationResumeVersion.updateMany({
@@ -90,18 +107,14 @@ export async function PATCH(
     });
 
     if (useTailoredResume) {
-      const tailored = match.tailoredResumeDraft;
-      if (!tailored) {
-        throw new Error("TAILORED_RESUME_NOT_FOUND");
-      }
-      const document = resumeDocumentSchema.safeParse(tailored.content);
-      if (!document.success) throw new Error("TAILORED_RESUME_INVALID");
+      const tailored = match.tailoredResumeDraft!;
+      const document = tailoredDocument!;
       const created = await transaction.applicationResumeVersion.create({
         data: {
           applicationId: match.applicationId,
           sourceResumeDraftId: tailored.id,
-          resumeTitle: document.data.title || tailored.title,
-          resumeContent: document.data as unknown as Prisma.InputJsonValue,
+          resumeTitle: document.title || tailored.title,
+          resumeContent: document as unknown as Prisma.InputJsonValue,
           jobTitle: match.resumeVersion.jobTitle,
           company: match.resumeVersion.company,
           jobDescription: match.resumeVersion.jobDescription,

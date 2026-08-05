@@ -34,6 +34,7 @@ import { ResumePreview } from "@/src/components/resume-builder/resume-preview";
 import type { AppliedResumeImprovement } from "@/src/lib/resume-builder/apply-improvement";
 import type { ResumeDocument } from "@/src/lib/resume-builder/schema";
 import type { SavedResumeAnalysisView } from "@/src/types/resume-builder";
+import type { ResumeTailoringContext } from "@/src/types/resume-match";
 
 type SectionId =
   | "personal"
@@ -175,10 +176,12 @@ export function ResumeBuilder({
   initialResumeId,
   initialDraft,
   savedAnalysis,
+  tailoringContext,
 }: {
   initialResumeId: string | null;
   initialDraft: ResumeDocument;
   savedAnalysis: SavedResumeAnalysisView | null;
+  tailoringContext: ResumeTailoringContext | null;
 }) {
   const router = useRouter();
   const [resumeId, setResumeId] = useState(initialResumeId);
@@ -471,6 +474,36 @@ export function ResumeBuilder({
             <RotateCcw aria-hidden="true" /> Undo
           </Button>
         </div>
+      ) : null}
+      {tailoringContext ? (
+        <section className="overflow-hidden rounded-xl border border-emerald-200 bg-white shadow-sm" aria-labelledby="tailored-changes-title">
+          <div className="flex flex-col gap-3 border-b border-emerald-100 bg-emerald-50/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                <Sparkles className="size-4" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 id="tailored-changes-title" className="text-sm font-semibold text-slate-950">Tailored for {tailoringContext.role}</h2>
+                <p className="mt-0.5 text-xs text-slate-500">{tailoringContext.company} · cloned from {tailoringContext.sourceResumeTitle} · {tailoringContext.changes.length} highlighted changes</p>
+              </div>
+            </div>
+            <span className="text-xs font-medium text-emerald-700">Original resume preserved</span>
+          </div>
+          <div className="grid gap-2 p-4 md:grid-cols-2">
+            {tailoringContext.changes.map((change) => (
+              <button
+                key={change.index}
+                type="button"
+                onClick={() => openEditorSection(change.section)}
+                className="rounded-lg border border-emerald-100 bg-emerald-50/50 p-3 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50"
+              >
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">{change.section}</span>
+                <span className="mt-1 block text-xs font-medium text-slate-900">{change.title}</span>
+                <span className="mt-1 block line-clamp-2 text-[11px] leading-5 text-slate-500">{change.after}</span>
+              </button>
+            ))}
+          </div>
+        </section>
       ) : null}
       {savedAnalysis ? (
         <AnalysisSuggestions
@@ -786,7 +819,7 @@ export function ResumeBuilder({
                 improvements={savedAnalysis.analysis.improvements}
               />
             ) : (
-              <ResumePreview draft={draft} />
+              <ResumePreview draft={draft} highlightedChanges={tailoringContext?.changes} />
             )}
           </div>
         </section>
