@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { ResumeAnalysis } from "@/src/lib/resume-analysis/schema";
+import type { SavedResumeAnalysisView } from "@/src/types/resume-builder";
 
 type AnalysisResponse = {
   analysis: ResumeAnalysis;
@@ -28,7 +29,7 @@ type AnalysisResponse = {
     characterCount: number;
     fileName: string;
     model: string;
-    provider: "groq" | "ollama";
+    provider: "groq" | "ollama" | null;
     savedAnalysisId: string;
     builderReady: boolean;
   };
@@ -84,15 +85,31 @@ function ScoreRing({ score }: { score: number }) {
 
 export function ResumeAnalyzer({
   analysisMode,
+  initialAnalysis = null,
 }: {
   analysisMode: "cloud" | "local";
+  initialAnalysis?: SavedResumeAnalysisView | null;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AnalysisResponse | null>(null);
+  const [result, setResult] = useState<AnalysisResponse | null>(() =>
+    initialAnalysis
+      ? {
+          analysis: initialAnalysis.analysis,
+          metadata: {
+            characterCount: initialAnalysis.characterCount ?? 0,
+            fileName: initialAnalysis.fileName,
+            model: initialAnalysis.model ?? "",
+            provider: initialAnalysis.provider,
+            savedAnalysisId: initialAnalysis.id,
+            builderReady: initialAnalysis.importedDraft !== null,
+          },
+        }
+      : null,
+  );
 
   function chooseFile(nextFile: File | undefined) {
     if (!nextFile) return;
@@ -309,7 +326,9 @@ function AnalysisResults({
                 <Sparkles aria-hidden="true" />
                 {metadata.provider === "groq"
                   ? "Cloud AI analysis"
-                  : "Local AI analysis"}
+                  : metadata.provider === "ollama"
+                    ? "Local AI analysis"
+                    : "Saved analysis"}
               </Badge>
               <Badge variant="outline" className="border-emerald-200 text-emerald-700">
                 <CheckCircle2 aria-hidden="true" />
@@ -317,9 +336,18 @@ function AnalysisResults({
                   ? "Saved and ready for Builder"
                   : "Suggestions saved"}
               </Badge>
-              <span className="text-xs text-slate-400">
-                {metadata.model} · {metadata.characterCount.toLocaleString()} characters
-              </span>
+              {metadata.model || metadata.characterCount > 0 ? (
+                <span className="text-xs text-slate-400">
+                  {[
+                    metadata.model,
+                    metadata.characterCount > 0
+                      ? `${metadata.characterCount.toLocaleString()} characters`
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              ) : null}
             </div>
             <h2
               id="analysis-results-title"

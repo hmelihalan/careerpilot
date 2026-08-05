@@ -1,10 +1,15 @@
 import { Files } from "lucide-react";
 
 import { ResumeDashboard } from "@/src/components/resume-builder/resume-dashboard";
+import { ResumeAnalysisHistory } from "@/src/components/resume-analysis/resume-analysis-history";
 import { getResumeDraftsForCurrentUser } from "@/src/server/resume-builder/get-resume-drafts";
+import { getSavedResumeAnalysesForCurrentUser } from "@/src/server/resume-builder/saved-analysis";
 
 export default async function ResumesPage() {
-  const resumes = await getResumeDraftsForCurrentUser();
+  const [resumes, analyses] = await Promise.all([
+    getResumeDraftsForCurrentUser(),
+    getSavedResumeAnalysesForCurrentUser(),
+  ]);
 
   return (
     <div className="min-w-0 space-y-6">
@@ -23,6 +28,7 @@ export default async function ResumesPage() {
       </section>
 
       <ResumeDashboard initialResumes={resumes} />
+      <ResumeAnalysisHistory initialAnalyses={analyses} />
     </div>
   );
 }

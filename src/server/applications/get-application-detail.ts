@@ -18,11 +18,23 @@ export async function getApplicationDetailForCurrentUser(
     },
     include: {
       material: true,
+      resumeMatches: {
+        include: { resumeVersion: true },
+        orderBy: { createdAt: "desc" },
+      },
+      resumeVersions: {
+        where: { isSubmitted: true },
+        orderBy: { submittedAt: "desc" },
+        take: 1,
+      },
       notes: {
         orderBy: { createdAt: "desc" },
       },
       reminders: {
         orderBy: [{ completedAt: "asc" }, { remindAt: "asc" }],
+      },
+      interviews: {
+        orderBy: { scheduledAt: "asc" },
       },
       statusHistory: {
         orderBy: { changedAt: "desc" },

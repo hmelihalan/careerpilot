@@ -5,19 +5,27 @@ import { ArrowLeft, FilePenLine, Sparkles } from "lucide-react";
 import { ResumeBuilder } from "@/src/components/resume-builder/resume-builder";
 import { getResumeDraftForCurrentUser } from "@/src/server/resume-builder/get-resume-draft";
 import { getSavedResumeAnalysisForCurrentUser } from "@/src/server/resume-builder/saved-analysis";
+import { getResumeTailoringContextForCurrentUser } from "@/src/server/resume-match/get-tailoring-context";
 
 export default async function ResumeBuilderPage({
   searchParams,
 }: {
-  searchParams: Promise<{ resume?: string }>;
+  searchParams: Promise<{ resume?: string; analysis?: string; match?: string }>;
 }) {
-  const { resume: resumeId } = await searchParams;
-  const [currentResume, savedAnalysis] = await Promise.all([
+  const { resume: resumeId, analysis: analysisId, match: matchId } = await searchParams;
+  const [currentResume, savedAnalysis, tailoringContext] = await Promise.all([
     getResumeDraftForCurrentUser(resumeId),
-    getSavedResumeAnalysisForCurrentUser(),
+    getSavedResumeAnalysisForCurrentUser(analysisId),
+    getResumeTailoringContextForCurrentUser(matchId, resumeId),
   ]);
 
-  if (!currentResume) notFound();
+  if (
+    !currentResume ||
+    (analysisId && !savedAnalysis) ||
+    (matchId && !tailoringContext)
+  ) {
+    notFound();
+  }
 
   const aiMode =
     (process.env.RESUME_ANALYSIS_PROVIDER ??
@@ -59,6 +67,7 @@ export default async function ResumeBuilderPage({
         initialResumeId={currentResume.id}
         initialDraft={currentResume.draft}
         savedAnalysis={savedAnalysis}
+        tailoringContext={tailoringContext}
       />
     </div>
   );

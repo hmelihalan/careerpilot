@@ -1,5 +1,6 @@
 import type { ApplicationStatus as PrismaApplicationStatusValue } from "@/src/generated/prisma/enums";
 import type { InterviewQuestion } from "@/src/lib/application-materials/schema";
+import type { ApplicationResumeMatchView } from "@/src/types/resume-match";
 
 export type ApplicationImportMethod = "description" | "url";
 
@@ -44,6 +45,29 @@ export type ApplicationDetailReminder = {
   updatedAt: string;
 };
 
+export type ApplicationInterviewStatus =
+  | "SCHEDULED"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type ApplicationDetailInterview = {
+  id: string;
+  title: string;
+  roundNumber: number;
+  scheduledAt: string;
+  durationMinutes: number;
+  interviewerName: string | null;
+  interviewerRole: string | null;
+  location: string | null;
+  meetingUrl: string | null;
+  status: ApplicationInterviewStatus;
+  completedAt: string | null;
+  reminderMinutesBefore: number | null;
+  reminderId: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ApplicationMaterialView = {
   id: string;
   resumeDraftId: string | null;
@@ -52,6 +76,13 @@ export type ApplicationMaterialView = {
   followUpMessage: string;
   interviewQuestions: readonly InterviewQuestion[];
   updatedAt: string;
+};
+
+export type SubmittedResumeVersionView = {
+  id: string;
+  sourceResumeDraftId: string | null;
+  resumeTitle: string;
+  submittedAt: string;
 };
 
 export type ApplicationDetailStatusHistory = {
@@ -84,7 +115,10 @@ export type ApplicationDetailViewModel = {
   editValues: ApplicationEditFormData;
   notes: readonly ApplicationDetailNote[];
   reminders: readonly ApplicationDetailReminder[];
+  interviews: readonly ApplicationDetailInterview[];
   material: ApplicationMaterialView | null;
+  submittedResume: SubmittedResumeVersionView | null;
+  resumeMatches: readonly ApplicationResumeMatchView[];
   statusHistory: readonly ApplicationDetailStatusHistory[];
   createdAt: string;
   updatedAt: string;

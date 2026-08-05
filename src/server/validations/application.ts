@@ -259,3 +259,58 @@ export type SetApplicationReminderCompletionInput = z.input<
 export type DeleteApplicationReminderInput = z.input<
   typeof deleteApplicationReminderSchema
 >;
+
+const interviewTitle = z
+  .string()
+  .trim()
+  .min(1, "Interview title is required.")
+  .max(160, "Interview title must be 160 characters or fewer.");
+
+const interviewDate = z
+  .string()
+  .datetime({ offset: true, message: "Choose a valid interview date and time." });
+
+const interviewFields = {
+  title: interviewTitle,
+  roundNumber: z.number().int().min(1).max(20),
+  scheduledAt: interviewDate,
+  durationMinutes: z.number().int().min(15).max(480),
+  interviewerName: optionalTrimmedString(160),
+  interviewerRole: optionalTrimmedString(160),
+  location: optionalTrimmedString(300),
+  meetingUrl: optionalUrl,
+  reminderMinutesBefore: z.number().int().min(0).max(10_080).nullable(),
+};
+
+export const createApplicationInterviewSchema = z
+  .object({ slug: applicationSlug, ...interviewFields })
+  .strict();
+
+export const updateApplicationInterviewSchema = z
+  .object({ slug: applicationSlug, interviewId: recordId, ...interviewFields })
+  .strict();
+
+export const setApplicationInterviewStatusSchema = z
+  .object({
+    slug: applicationSlug,
+    interviewId: recordId,
+    status: z.enum(["SCHEDULED", "COMPLETED", "CANCELLED"]),
+  })
+  .strict();
+
+export const deleteApplicationInterviewSchema = z
+  .object({ slug: applicationSlug, interviewId: recordId })
+  .strict();
+
+export type CreateApplicationInterviewInput = z.input<
+  typeof createApplicationInterviewSchema
+>;
+export type UpdateApplicationInterviewInput = z.input<
+  typeof updateApplicationInterviewSchema
+>;
+export type SetApplicationInterviewStatusInput = z.input<
+  typeof setApplicationInterviewStatusSchema
+>;
+export type DeleteApplicationInterviewInput = z.input<
+  typeof deleteApplicationInterviewSchema
+>;

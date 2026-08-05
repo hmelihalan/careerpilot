@@ -45,6 +45,21 @@ export type DashboardUpcomingReminder = {
   overdue: boolean;
 };
 
+export type DashboardUpcomingInterview = {
+  id: string;
+  slug: string;
+  company: string;
+  role: string;
+  initials: string;
+  title: string;
+  roundNumber: number;
+  scheduledAt: string;
+  scheduledAtLabel: string;
+  durationMinutes: number;
+  location: string | null;
+  meetingUrl: string | null;
+};
+
 export type DashboardViewModel = {
   statusCounts: DashboardStatusCounts;
   responseRate: number;
@@ -52,4 +67,5 @@ export type DashboardViewModel = {
   recentApplications: readonly DashboardRecentApplication[];
   upcomingDeadlines: readonly DashboardUpcomingDeadline[];
   upcomingReminders: readonly DashboardUpcomingReminder[];
+  upcomingInterviews: readonly DashboardUpcomingInterview[];
 };

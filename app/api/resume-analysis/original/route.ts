@@ -29,8 +29,12 @@ export async function GET(request: Request) {
     },
   });
 
-  if (!saved?.originalFile || saved.originalMimeType !== "application/pdf") {
-    return errorResponse("The original PDF is not available.", "not_found", 404);
+  if (
+    !saved?.originalFile ||
+    (saved.originalMimeType !== "application/pdf" &&
+      saved.originalMimeType !== "text/plain")
+  ) {
+    return errorResponse("The original resume is not available.", "not_found", 404);
   }
 
   const safeName =
@@ -44,7 +48,9 @@ export async function GET(request: Request) {
       "Cache-Control": "private, no-store",
       "Content-Disposition": `inline; filename="${safeName}"`,
       "Content-Length": String(saved.originalFile.byteLength),
-      "Content-Type": "application/pdf",
+      "Content-Type": `${saved.originalMimeType}${
+        saved.originalMimeType === "text/plain" ? "; charset=utf-8" : ""
+      }`,
       "X-Content-Type-Options": "nosniff",
     },
   });
