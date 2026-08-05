@@ -67,6 +67,8 @@ model Application {
   notes          ApplicationNote[]
   reminders      ApplicationReminder[]
   material       ApplicationMaterial?
+  resumeVersions ApplicationResumeVersion[]
+  resumeMatches  ApplicationResumeMatch[]
 
   @@unique([userId, slug])
   @@index([userId])
@@ -112,33 +114,77 @@ model ApplicationReminder {
 }
 
 model ApplicationMaterial {
-  id                 String      @id @default(cuid())
-  applicationId      String      @unique
+  id                 String       @id @default(cuid())
+  applicationId      String       @unique
   resumeDraftId      String?
   resumeTitle        String
-  coverLetter        String      @db.Text
-  followUpMessage    String      @db.Text
+  coverLetter        String       @db.Text
+  followUpMessage    String       @db.Text
   interviewQuestions Json
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-  application        Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  application        Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   resumeDraft        ResumeDraft? @relation(fields: [resumeDraftId], references: [id], onDelete: SetNull)
 
   @@index([resumeDraftId])
 }
 
 model ResumeDraft {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  language  String
-  content   Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String                     @id @default(cuid())
+  userId               String
+  title                String
+  language             String
+  content              Json
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
   applicationMaterials ApplicationMaterial[]
+  applicationVersions  ApplicationResumeVersion[] @relation("ResumeVersionSource")
+  tailoredMatches      ApplicationResumeMatch[]   @relation("TailoredResumeDraft")
 
   @@index([userId])
   @@index([userId, updatedAt])
+}
+
+model ApplicationResumeVersion {
+  id                  String                  @id @default(cuid())
+  applicationId       String
+  sourceResumeDraftId String?
+  resumeTitle         String
+  resumeContent       Json
+  jobTitle            String
+  company             String
+  jobDescription      String                  @db.Text
+  requiredSkills      String[]                @default([])
+  isSubmitted         Boolean                 @default(false)
+  submittedAt         DateTime?
+  createdAt           DateTime                @default(now())
+  application         Application             @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  sourceResumeDraft   ResumeDraft?            @relation("ResumeVersionSource", fields: [sourceResumeDraftId], references: [id], onDelete: SetNull)
+  match               ApplicationResumeMatch?
+
+  @@index([applicationId, createdAt])
+  @@index([applicationId, isSubmitted])
+  @@index([sourceResumeDraftId])
+}
+
+model ApplicationResumeMatch {
+  id                        String                   @id @default(cuid())
+  applicationId             String
+  resumeVersionId           String                   @unique
+  result                    Json
+  acceptedSuggestionIndexes Int[]                    @default([])
+  rejectedSuggestionIndexes Int[]                    @default([])
+  provider                  String?
+  model                     String?
+  tailoredResumeDraftId     String?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  application               Application              @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  resumeVersion             ApplicationResumeVersion @relation(fields: [resumeVersionId], references: [id], onDelete: Cascade)
+  tailoredResumeDraft       ResumeDraft?             @relation("TailoredResumeDraft", fields: [tailoredResumeDraftId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, createdAt])
+  @@index([tailoredResumeDraftId])
 }
 
 model SavedResumeAnalysis {
