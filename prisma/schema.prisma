@@ -47,6 +47,14 @@ enum InterviewStatus {
   CANCELLED
 }
 
+enum ContactType {
+  RECRUITER
+  HIRING_MANAGER
+  INTERVIEWER
+  REFERRAL
+  OTHER
+}
+
 model Application {
   id             String                     @id @default(cuid())
   userId         String
@@ -76,6 +84,7 @@ model Application {
   resumeVersions ApplicationResumeVersion[]
   resumeMatches  ApplicationResumeMatch[]
   interviews     ApplicationInterview[]
+  contacts       ApplicationContact[]
 
   @@unique([userId, slug])
   @@index([userId])
@@ -116,6 +125,7 @@ model ApplicationReminder {
   updatedAt     DateTime              @updatedAt
   application   Application           @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   interview     ApplicationInterview?
+  contact       ApplicationContact?
 
   @@index([applicationId, remindAt])
   @@index([completedAt, remindAt])
@@ -143,6 +153,26 @@ model ApplicationInterview {
 
   @@index([applicationId, scheduledAt])
   @@index([status, scheduledAt])
+}
+
+model ApplicationContact {
+  id              String               @id @default(cuid())
+  applicationId   String
+  name            String
+  contactType     ContactType          @default(RECRUITER)
+  role            String?
+  email           String?
+  linkedinUrl     String?
+  lastContactedAt DateTime?
+  nextFollowUpAt  DateTime?
+  reminderId      String?              @unique
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  application     Application          @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reminder        ApplicationReminder? @relation(fields: [reminderId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, updatedAt])
+  @@index([nextFollowUpAt])
 }
 
 model ApplicationMaterial {
