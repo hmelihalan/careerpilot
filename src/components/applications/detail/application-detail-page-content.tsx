@@ -15,6 +15,7 @@ import { ApplicationMaterialsPanel } from "@/src/components/applications/detail/
 import { ApplicationResumeMatchWorkspace } from "@/src/components/applications/detail/application-resume-match-workspace";
 import { ApplicationOverview } from "@/src/components/applications/detail/application-overview";
 import { CoverLetterPanel } from "@/src/components/applications/detail/cover-letter-panel";
+import { ContactCrm } from "@/src/components/applications/detail/contact-crm";
 import { InterviewPrepPanel } from "@/src/components/applications/detail/interview-prep-panel";
 import { InterviewPlanner } from "@/src/components/applications/detail/interview-planner";
 import { JobDescriptionPanel } from "@/src/components/applications/detail/job-description-panel";
@@ -130,6 +131,16 @@ export function ApplicationDetailPageContent(
         ),
       },
       { id: "notes", label: "Notes", content: <ApplicationNotes demo /> },
+      {
+        id: "contacts",
+        label: "Contacts",
+        content: (
+          <UnavailableFeaturePanel
+            title="Contact & Recruiter CRM"
+            message="Sign in to save recruiters, hiring managers, and follow-up dates."
+          />
+        ),
+      },
       {
         id: "resume-match",
         label: "Resume Match",
@@ -276,6 +287,17 @@ export function ApplicationDetailPageContent(
             hasJobDescription={Boolean(application.jobDescription)}
             resumes={resumes}
             materials={application.materials}
+          />
+        ),
+      },
+      {
+        id: "contacts",
+        label: "Contacts",
+        content: (
+          <ContactCrm
+            slug={application.slug}
+            company={application.company}
+            contacts={application.contacts}
           />
         ),
       },

@@ -38,6 +38,10 @@ export async function getApplicationDetailForCurrentUser(
       interviews: {
         orderBy: { scheduledAt: "asc" },
       },
+      contacts: {
+        include: { reminder: true },
+        orderBy: { updatedAt: "desc" },
+      },
       statusHistory: {
         orderBy: { changedAt: "desc" },
       },

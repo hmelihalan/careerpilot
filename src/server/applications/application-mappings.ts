@@ -95,6 +95,7 @@ type PrismaApplicationDetailRecord = Prisma.ApplicationGetPayload<{
     notes: true;
     reminders: true;
     interviews: true;
+    contacts: { include: { reminder: true } };
     statusHistory: true;
   };
 }>;
@@ -260,6 +261,20 @@ export function toApplicationDetailViewModel(
       reminderId: interview.reminderId,
       createdAt: interview.createdAt.toISOString(),
       updatedAt: interview.updatedAt.toISOString(),
+    })),
+    contacts: application.contacts.map((contact) => ({
+      id: contact.id,
+      name: contact.name,
+      contactType: contact.contactType,
+      role: contact.role,
+      email: contact.email,
+      linkedinUrl: contact.linkedinUrl,
+      lastContactedAt: contact.lastContactedAt?.toISOString() ?? null,
+      nextFollowUpAt: contact.nextFollowUpAt?.toISOString() ?? null,
+      reminderId: contact.reminderId,
+      reminderCompletedAt: contact.reminder?.completedAt?.toISOString() ?? null,
+      createdAt: contact.createdAt.toISOString(),
+      updatedAt: contact.updatedAt.toISOString(),
     })),
     materials: application.materials.map((material) => {
       const interviewQuestions = interviewQuestionsSchema.safeParse(
