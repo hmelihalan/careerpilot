@@ -68,6 +68,28 @@ export type ApplicationDetailInterview = {
   updatedAt: string;
 };
 
+export type ApplicationContactType =
+  | "RECRUITER"
+  | "HIRING_MANAGER"
+  | "INTERVIEWER"
+  | "REFERRAL"
+  | "OTHER";
+
+export type ApplicationDetailContact = {
+  id: string;
+  name: string;
+  contactType: ApplicationContactType;
+  role: string | null;
+  email: string | null;
+  linkedinUrl: string | null;
+  lastContactedAt: string | null;
+  nextFollowUpAt: string | null;
+  reminderId: string | null;
+  reminderCompletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type ApplicationMaterialView = {
   id: string;
   resumeDraftId: string | null;
@@ -75,6 +97,9 @@ export type ApplicationMaterialView = {
   coverLetter: string;
   followUpMessage: string;
   interviewQuestions: readonly InterviewQuestion[];
+  isSubmitted: boolean;
+  submittedAt: string | null;
+  createdAt: string;
   updatedAt: string;
 };
 
@@ -116,7 +141,8 @@ export type ApplicationDetailViewModel = {
   notes: readonly ApplicationDetailNote[];
   reminders: readonly ApplicationDetailReminder[];
   interviews: readonly ApplicationDetailInterview[];
-  material: ApplicationMaterialView | null;
+  contacts: readonly ApplicationDetailContact[];
+  materials: readonly ApplicationMaterialView[];
   submittedResume: SubmittedResumeVersionView | null;
   resumeMatches: readonly ApplicationResumeMatchView[];
   statusHistory: readonly ApplicationDetailStatusHistory[];

@@ -27,6 +27,16 @@ const optionalUrl = z
   }, "Enter a valid URL beginning with http:// or https://.")
   .transform((value) => (value ? value : undefined));
 
+const optionalEmail = z
+  .string()
+  .trim()
+  .max(254, "Email must be 254 characters or fewer.")
+  .refine(
+    (value) => !value || z.email().safeParse(value).success,
+    "Enter a valid email address.",
+  )
+  .transform((value) => (value ? value : undefined));
+
 const POSTGRES_INTEGER_MAX = 2_147_483_647;
 
 function isValidDateInput(value: string): boolean {
@@ -313,4 +323,60 @@ export type SetApplicationInterviewStatusInput = z.input<
 >;
 export type DeleteApplicationInterviewInput = z.input<
   typeof deleteApplicationInterviewSchema
+>;
+
+const contactName = z
+  .string()
+  .trim()
+  .min(1, "Contact name is required.")
+  .max(160, "Contact name must be 160 characters or fewer.");
+
+const optionalContactDate = z
+  .string()
+  .datetime({ offset: true, message: "Choose a valid date and time." })
+  .nullable();
+
+const contactFields = {
+  name: contactName,
+  contactType: z.enum([
+    "RECRUITER",
+    "HIRING_MANAGER",
+    "INTERVIEWER",
+    "REFERRAL",
+    "OTHER",
+  ]),
+  role: optionalTrimmedString(160),
+  email: optionalEmail,
+  linkedinUrl: optionalUrl,
+  lastContactedAt: optionalContactDate,
+  nextFollowUpAt: optionalContactDate,
+};
+
+export const createApplicationContactSchema = z
+  .object({ slug: applicationSlug, ...contactFields })
+  .strict();
+
+export const updateApplicationContactSchema = z
+  .object({ slug: applicationSlug, contactId: recordId, ...contactFields })
+  .strict();
+
+export const logApplicationContactSchema = z
+  .object({ slug: applicationSlug, contactId: recordId })
+  .strict();
+
+export const deleteApplicationContactSchema = z
+  .object({ slug: applicationSlug, contactId: recordId })
+  .strict();
+
+export type CreateApplicationContactInput = z.input<
+  typeof createApplicationContactSchema
+>;
+export type UpdateApplicationContactInput = z.input<
+  typeof updateApplicationContactSchema
+>;
+export type LogApplicationContactInput = z.input<
+  typeof logApplicationContactSchema
+>;
+export type DeleteApplicationContactInput = z.input<
+  typeof deleteApplicationContactSchema
 >;

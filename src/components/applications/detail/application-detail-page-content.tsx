@@ -15,6 +15,7 @@ import { ApplicationMaterialsPanel } from "@/src/components/applications/detail/
 import { ApplicationResumeMatchWorkspace } from "@/src/components/applications/detail/application-resume-match-workspace";
 import { ApplicationOverview } from "@/src/components/applications/detail/application-overview";
 import { CoverLetterPanel } from "@/src/components/applications/detail/cover-letter-panel";
+import { ContactCrm } from "@/src/components/applications/detail/contact-crm";
 import { InterviewPrepPanel } from "@/src/components/applications/detail/interview-prep-panel";
 import { InterviewPlanner } from "@/src/components/applications/detail/interview-planner";
 import { JobDescriptionPanel } from "@/src/components/applications/detail/job-description-panel";
@@ -130,6 +131,16 @@ export function ApplicationDetailPageContent(
         ),
       },
       { id: "notes", label: "Notes", content: <ApplicationNotes demo /> },
+      {
+        id: "contacts",
+        label: "Contacts",
+        content: (
+          <UnavailableFeaturePanel
+            title="Contact & Recruiter CRM"
+            message="Sign in to save recruiters, hiring managers, and follow-up dates."
+          />
+        ),
+      },
       {
         id: "resume-match",
         label: "Resume Match",
@@ -252,14 +263,14 @@ export function ApplicationDetailPageContent(
         label: "Cover Letter",
         content: (
           <ApplicationMaterialsPanel
-            key={`cover-letter-${application.material?.updatedAt ?? "empty"}`}
+            key={`cover-letter-${application.materials[0]?.id ?? "empty"}`}
             kind="coverLetter"
             slug={application.slug}
             company={application.company}
             role={application.role}
             hasJobDescription={Boolean(application.jobDescription)}
             resumes={resumes}
-            material={application.material}
+            materials={application.materials}
           />
         ),
       },
@@ -268,14 +279,25 @@ export function ApplicationDetailPageContent(
         label: "Follow-up",
         content: (
           <ApplicationMaterialsPanel
-            key={`follow-up-${application.material?.updatedAt ?? "empty"}`}
+            key={`follow-up-${application.materials[0]?.id ?? "empty"}`}
             kind="followUpMessage"
             slug={application.slug}
             company={application.company}
             role={application.role}
             hasJobDescription={Boolean(application.jobDescription)}
             resumes={resumes}
-            material={application.material}
+            materials={application.materials}
+          />
+        ),
+      },
+      {
+        id: "contacts",
+        label: "Contacts",
+        content: (
+          <ContactCrm
+            slug={application.slug}
+            company={application.company}
+            contacts={application.contacts}
           />
         ),
       },
@@ -296,14 +318,14 @@ export function ApplicationDetailPageContent(
         label: "Interview Prep",
         content: (
           <ApplicationMaterialsPanel
-            key={`interview-${application.material?.updatedAt ?? "empty"}`}
+            key={`interview-${application.materials[0]?.id ?? "empty"}`}
             kind="interviewQuestions"
             slug={application.slug}
             company={application.company}
             role={application.role}
             hasJobDescription={Boolean(application.jobDescription)}
             resumes={resumes}
-            material={application.material}
+            materials={application.materials}
           />
         ),
       },

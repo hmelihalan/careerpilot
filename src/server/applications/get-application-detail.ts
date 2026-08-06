@@ -17,7 +17,9 @@ export async function getApplicationDetailForCurrentUser(
       slug,
     },
     include: {
-      material: true,
+      materials: {
+        orderBy: { createdAt: "desc" },
+      },
       resumeMatches: {
         include: { resumeVersion: true },
         orderBy: { createdAt: "desc" },
@@ -35,6 +37,10 @@ export async function getApplicationDetailForCurrentUser(
       },
       interviews: {
         orderBy: { scheduledAt: "asc" },
+      },
+      contacts: {
+        include: { reminder: true },
+        orderBy: { updatedAt: "desc" },
       },
       statusHistory: {
         orderBy: { changedAt: "desc" },

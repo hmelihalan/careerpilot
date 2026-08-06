@@ -12,6 +12,7 @@ export const applicationDetailTabIds = [
   "resume-match",
   "cover-letter",
   "follow-up",
+  "contacts",
   "interviews",
   "interview-prep",
   "activity",
