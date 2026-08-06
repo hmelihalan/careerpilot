@@ -2,23 +2,33 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { Prisma } from "@/src/generated/prisma/client";
-import { interviewQuestionsSchema } from "@/src/lib/application-materials/schema";
-import { prisma } from "@/src/lib/prisma";
-import { resumeDocumentSchema } from "@/src/lib/resume-builder/schema";
-import { generateApplicationMaterials } from "@/src/server/application-materials/generate-application-materials";
-import { ResumeAnalysisServiceError } from "@/src/server/resume-analysis/analyze-resume";
+import { Prisma } from "../../../../../src/generated/prisma/client";
+import { interviewQuestionsSchema } from "../../../../../src/lib/application-materials/schema";
+import { prisma } from "../../../../../src/lib/prisma";
+import { resumeDocumentSchema } from "../../../../../src/lib/resume-builder/schema";
+import { generateApplicationMaterials } from "../../../../../src/server/application-materials/generate-application-materials";
+import { ResumeAnalysisServiceError } from "../../../../../src/server/resume-analysis/analyze-resume";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 const generateRequestSchema = z.object({ resumeId: z.string().trim().min(1).max(100) }).strict();
-const saveRequestSchema = z
-  .object({
-    kind: z.enum(["coverLetter", "followUpMessage"]),
-    content: z.string().trim().min(1).max(6_000),
-  })
-  .strict();
+const saveRequestSchema = z.discriminatedUnion("action", [
+  z
+    .object({
+      action: z.literal("edit"),
+      materialId: z.string().trim().min(1).max(100),
+      kind: z.enum(["coverLetter", "followUpMessage"]),
+      content: z.string().trim().min(1).max(6_000),
+    })
+    .strict(),
+  z
+    .object({
+      action: z.literal("mark_submitted"),
+      materialId: z.string().trim().min(1).max(100),
+    })
+    .strict(),
+]);
 
 function errorResponse(message: string, code: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -31,6 +41,9 @@ function toResponse(material: {
   coverLetter: string;
   followUpMessage: string;
   interviewQuestions: Prisma.JsonValue;
+  isSubmitted: boolean;
+  submittedAt: Date | null;
+  createdAt: Date;
   updatedAt: Date;
 }) {
   const questions = interviewQuestionsSchema.safeParse(material.interviewQuestions);
@@ -41,6 +54,9 @@ function toResponse(material: {
     coverLetter: material.coverLetter,
     followUpMessage: material.followUpMessage,
     interviewQuestions: questions.success ? questions.data : [],
+    isSubmitted: material.isSubmitted,
+    submittedAt: material.submittedAt?.toISOString() ?? null,
+    createdAt: material.createdAt.toISOString(),
     updatedAt: material.updatedAt.toISOString(),
   };
 }
@@ -128,18 +144,9 @@ export async function POST(
       requiredSkills: application.requiredSkills,
       resume: resume.data,
     });
-    const material = await prisma.applicationMaterial.upsert({
-      where: { applicationId: application.id },
-      create: {
+    const material = await prisma.applicationMaterial.create({
+      data: {
         applicationId: application.id,
-        resumeDraftId: resumeRecord.id,
-        resumeTitle: resume.data.title || resumeRecord.title,
-        coverLetter: generated.coverLetter,
-        followUpMessage: generated.followUpMessage,
-        interviewQuestions:
-          generated.interviewQuestions as unknown as Prisma.InputJsonValue,
-      },
-      update: {
         resumeDraftId: resumeRecord.id,
         resumeTitle: resume.data.title || resumeRecord.title,
         coverLetter: generated.coverLetter,
@@ -149,7 +156,7 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ material: toResponse(material) });
+    return NextResponse.json({ material: toResponse(material) }, { status: 201 });
   } catch (error) {
     if (error instanceof ResumeAnalysisServiceError) {
       const status =
@@ -187,14 +194,42 @@ export async function PATCH(
   if (!parsed.success) return errorResponse("Enter valid content before saving.", "invalid_request", 400);
 
   const { applicationId: slug } = await params;
-  const updated = await prisma.applicationMaterial.updateMany({
-    where: { application: { userId, slug } },
-    data: { [parsed.data.kind]: parsed.data.content },
+  const material = await prisma.applicationMaterial.findFirst({
+    where: {
+      id: parsed.data.materialId,
+      application: { userId, slug },
+    },
+    select: { id: true, applicationId: true, isSubmitted: true },
   });
-
-  if (updated.count === 0) {
-    return errorResponse("Generate application materials before editing them.", "not_found", 404);
+  if (!material) {
+    return errorResponse("Material version not found.", "not_found", 404);
   }
+
+  if (parsed.data.action === "edit") {
+    if (material.isSubmitted) {
+      return errorResponse(
+        "The sent material version is locked. Generate a new version to make changes.",
+        "submitted_version_locked",
+        409,
+      );
+    }
+    await prisma.applicationMaterial.update({
+      where: { id: material.id },
+      data: { [parsed.data.kind]: parsed.data.content },
+    });
+    return NextResponse.json({ success: true });
+  }
+
+  await prisma.$transaction([
+    prisma.applicationMaterial.updateMany({
+      where: { applicationId: material.applicationId, isSubmitted: true },
+      data: { isSubmitted: false, submittedAt: null },
+    }),
+    prisma.applicationMaterial.update({
+      where: { id: material.id },
+      data: { isSubmitted: true, submittedAt: new Date() },
+    }),
+  ]);
 
   return NextResponse.json({ success: true });
 }

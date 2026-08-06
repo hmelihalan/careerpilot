@@ -17,7 +17,9 @@ export async function getApplicationDetailForCurrentUser(
       slug,
     },
     include: {
-      material: true,
+      materials: {
+        orderBy: { createdAt: "desc" },
+      },
       resumeMatches: {
         include: { resumeVersion: true },
         orderBy: { createdAt: "desc" },

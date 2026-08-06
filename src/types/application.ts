@@ -75,6 +75,9 @@ export type ApplicationMaterialView = {
   coverLetter: string;
   followUpMessage: string;
   interviewQuestions: readonly InterviewQuestion[];
+  isSubmitted: boolean;
+  submittedAt: string | null;
+  createdAt: string;
   updatedAt: string;
 };
 
@@ -116,7 +119,7 @@ export type ApplicationDetailViewModel = {
   notes: readonly ApplicationDetailNote[];
   reminders: readonly ApplicationDetailReminder[];
   interviews: readonly ApplicationDetailInterview[];
-  material: ApplicationMaterialView | null;
+  materials: readonly ApplicationMaterialView[];
   submittedResume: SubmittedResumeVersionView | null;
   resumeMatches: readonly ApplicationResumeMatchView[];
   statusHistory: readonly ApplicationDetailStatusHistory[];

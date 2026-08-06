@@ -89,7 +89,7 @@ export const uiSourceToPrisma = {
 
 type PrismaApplicationDetailRecord = Prisma.ApplicationGetPayload<{
   include: {
-    material: true;
+    materials: true;
     resumeMatches: { include: { resumeVersion: true } };
     resumeVersions: true;
     notes: true;
@@ -182,10 +182,6 @@ export function formatApplicationSalary(
 export function toApplicationDetailViewModel(
   application: PrismaApplicationDetailRecord,
 ): ApplicationDetailViewModel {
-  const interviewQuestions = application.material
-    ? interviewQuestionsSchema.safeParse(application.material.interviewQuestions)
-    : null;
-
   return {
     id: application.id,
     slug: application.slug,
@@ -265,19 +261,25 @@ export function toApplicationDetailViewModel(
       createdAt: interview.createdAt.toISOString(),
       updatedAt: interview.updatedAt.toISOString(),
     })),
-    material: application.material
-      ? {
-          id: application.material.id,
-          resumeDraftId: application.material.resumeDraftId,
-          resumeTitle: application.material.resumeTitle,
-          coverLetter: application.material.coverLetter,
-          followUpMessage: application.material.followUpMessage,
-          interviewQuestions: interviewQuestions?.success
-            ? interviewQuestions.data
-            : [],
-          updatedAt: application.material.updatedAt.toISOString(),
-        }
-      : null,
+    materials: application.materials.map((material) => {
+      const interviewQuestions = interviewQuestionsSchema.safeParse(
+        material.interviewQuestions,
+      );
+      return {
+        id: material.id,
+        resumeDraftId: material.resumeDraftId,
+        resumeTitle: material.resumeTitle,
+        coverLetter: material.coverLetter,
+        followUpMessage: material.followUpMessage,
+        interviewQuestions: interviewQuestions.success
+          ? interviewQuestions.data
+          : [],
+        isSubmitted: material.isSubmitted,
+        submittedAt: material.submittedAt?.toISOString() ?? null,
+        createdAt: material.createdAt.toISOString(),
+        updatedAt: material.updatedAt.toISOString(),
+      };
+    }),
     submittedResume: application.resumeVersions[0]?.submittedAt
       ? {
           id: application.resumeVersions[0].id,

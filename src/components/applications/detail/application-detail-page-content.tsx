@@ -252,14 +252,14 @@ export function ApplicationDetailPageContent(
         label: "Cover Letter",
         content: (
           <ApplicationMaterialsPanel
-            key={`cover-letter-${application.material?.updatedAt ?? "empty"}`}
+            key={`cover-letter-${application.materials[0]?.id ?? "empty"}`}
             kind="coverLetter"
             slug={application.slug}
             company={application.company}
             role={application.role}
             hasJobDescription={Boolean(application.jobDescription)}
             resumes={resumes}
-            material={application.material}
+            materials={application.materials}
           />
         ),
       },
@@ -268,14 +268,14 @@ export function ApplicationDetailPageContent(
         label: "Follow-up",
         content: (
           <ApplicationMaterialsPanel
-            key={`follow-up-${application.material?.updatedAt ?? "empty"}`}
+            key={`follow-up-${application.materials[0]?.id ?? "empty"}`}
             kind="followUpMessage"
             slug={application.slug}
             company={application.company}
             role={application.role}
             hasJobDescription={Boolean(application.jobDescription)}
             resumes={resumes}
-            material={application.material}
+            materials={application.materials}
           />
         ),
       },
@@ -296,14 +296,14 @@ export function ApplicationDetailPageContent(
         label: "Interview Prep",
         content: (
           <ApplicationMaterialsPanel
-            key={`interview-${application.material?.updatedAt ?? "empty"}`}
+            key={`interview-${application.materials[0]?.id ?? "empty"}`}
             kind="interviewQuestions"
             slug={application.slug}
             company={application.company}
             role={application.role}
             hasJobDescription={Boolean(application.jobDescription)}
             resumes={resumes}
-            material={application.material}
+            materials={application.materials}
           />
         ),
       },
